@@ -4,12 +4,11 @@
  */
 import os from 'node:os';
 
-import { screen } from 'electron';
-
 import { UTIO, UTIOPayload } from '@ui-tars/utio';
 
 import { logger } from '../logger';
 import { SettingStore } from '@main/store/setting';
+import { getScreenSize } from '@main/utils/screen';
 
 export class UTIOService {
   private static instance: UTIOService;
@@ -40,14 +39,16 @@ export class UTIOService {
     try {
       const utio = this.ensureUTIO();
       if (utio) {
-        const primaryDisplay = screen.getPrimaryDisplay();
-        const { width, height } = primaryDisplay.size;
+        const targetDisplay = getScreenSize();
+        const { width, height } = targetDisplay.logicalSize;
         const payload: UTIOPayload<'appLaunched'> = {
           type: 'appLaunched',
           platform: process.platform,
           osVersion: os.release(),
           screenWidth: width,
           screenHeight: height,
+          displayId: targetDisplay.id,
+          displayLabel: targetDisplay.label,
         };
 
         logger.debug('[UTIO] payload:', payload);

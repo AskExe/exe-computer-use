@@ -37,6 +37,7 @@ import { BROWSER_OPERATOR } from '@renderer/const';
 import { PresetImport } from './PresetImport';
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs';
 import { PresetBanner } from './PresetBanner';
+import { DisplaySettings } from '@renderer/components/Settings/category/display';
 
 import googleIcon from '@resources/icons/google-color.svg?url';
 import bingIcon from '@resources/icons/bing-color.svg?url';
@@ -64,6 +65,7 @@ const SECTIONS = {
   chat: 'Chat Settings',
   report: 'Report Settings',
   general: 'General',
+  display: 'Display Settings',
 } as const;
 
 export default function Settings() {
@@ -581,6 +583,18 @@ export default function Settings() {
                     </a>
                   </div>
                 )}
+                <div className="h-50" />
+              </div>
+
+              <div
+                id="display"
+                ref={(el) => {
+                  sectionRefs.current.display = el;
+                }}
+                className="space-y-6 ml-1 mr-4"
+              >
+                <h2 className="text-lg font-medium">{SECTIONS.display}</h2>
+                <DisplaySettings />
                 <div className="h-50" />
               </div>
             </form>

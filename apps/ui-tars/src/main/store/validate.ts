@@ -38,6 +38,9 @@ export const PresetSchema = z.object({
   rmaEnabled: z.boolean().optional(),
   reflectionBaseUrl: z.string().optional(),
   reflectionModelName: z.string().optional(),
+
+  // Display Settings
+  targetDisplayId: z.number().optional(),
 });
 
 export type PresetSource = z.infer<typeof PresetSourceSchema>;

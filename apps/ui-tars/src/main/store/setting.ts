@@ -33,6 +33,7 @@ export const DEFAULT_SETTING: LocalStore = {
   rmaEnabled: true,
   reflectionBaseUrl: 'http://localhost:11436/v1',
   reflectionModelName: 'ui-tars-7b-dpo',
+  targetDisplayId: undefined,
 };
 
 export class SettingStore {

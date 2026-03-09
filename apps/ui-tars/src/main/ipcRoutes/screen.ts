@@ -3,18 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { initIpc } from '@ui-tars/electron-ipc/main';
-import { getScreenSize } from '@main/utils/screen';
+import { getScreenSize, getAllDisplays } from '@main/utils/screen';
 
 const t = initIpc.create();
 
 export const screenRoute = t.router({
   getScreenSize: t.procedure.input<void>().handle(async () => {
-    const primaryDisplay = getScreenSize();
+    const targetDisplay = getScreenSize();
 
     return {
-      screenWidth: primaryDisplay.physicalSize.width,
-      screenHeight: primaryDisplay.physicalSize.height,
-      scaleFactor: primaryDisplay.scaleFactor,
+      screenWidth: targetDisplay.physicalSize.width,
+      screenHeight: targetDisplay.physicalSize.height,
+      scaleFactor: targetDisplay.scaleFactor,
+      displayId: targetDisplay.id,
+      displayLabel: targetDisplay.label,
     };
+  }),
+
+  getAllDisplays: t.procedure.input<void>().handle(async () => {
+    return getAllDisplays();
   }),
 });

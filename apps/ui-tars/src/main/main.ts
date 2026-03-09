@@ -23,6 +23,7 @@ import { registerIpcMain } from '@ui-tars/electron-ipc/main';
 import { ipcRoutes } from './ipcRoutes';
 import { registerModelRoutes } from './ipcRoutes/model';
 import { ModelManager } from './services/modelManager';
+import { getAllDisplays, getTargetDisplay } from './utils/screen';
 
 import { UTIOService } from './services/utio';
 import { store } from './store/create';
@@ -103,12 +104,12 @@ const initializeApp = async () => {
   session.defaultSession.setDisplayMediaRequestHandler(
     (_request, callback) => {
       desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-        const primaryDisplay = screen.getPrimaryDisplay();
-        const primarySource = sources.find(
-          (source) => source.display_id === primaryDisplay.id.toString(),
+        const targetDisplay = getTargetDisplay();
+        const targetSource = sources.find(
+          (source) => source.display_id === targetDisplay.id.toString(),
         );
 
-        callback({ video: primarySource!, audio: 'loopback' });
+        callback({ video: targetSource!, audio: 'loopback' });
       });
     },
     { useSystemPicker: false },

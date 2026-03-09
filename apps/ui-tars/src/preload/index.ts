@@ -51,6 +51,10 @@ const electronHandler = {
       ipcRenderer.on('setting-updated', (_, state) => callback(state));
     },
   },
+  screen: {
+    getScreenSize: () => ipcRenderer.invoke('screen:getScreenSize'),
+    getAllDisplays: () => ipcRenderer.invoke('screen:getAllDisplays'),
+  },
 };
 
 // Initialize zustand bridge
