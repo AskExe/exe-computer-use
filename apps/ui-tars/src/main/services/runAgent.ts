@@ -24,6 +24,8 @@ import {
   afterAgentRun,
   getLocalBrowserSearchEngine,
 } from '../utils/agent';
+import { RMAOrchestrator, KnowledgeBase } from './rma';
+import { ReflectionService } from './rma/reflectionService';
 
 export const runAgent = async (
   setState: (state: AppState) => void,
@@ -104,6 +106,22 @@ export const runAgent = async (
       restUserData,
       messages: [...(getState().messages || []), ...conversationsWithSoM],
     });
+
+    if (rmaEnabled && rma && screenshotBase64) {
+      const lastActionText = predictionParsed?.[0]
+        ? JSON.stringify(predictionParsed[0])
+        : '';
+      const { isLoop } = await rma.processStep(screenshotBase64, lastActionText);
+      if (isLoop) {
+        abortController?.abort();
+        setState({
+          ...getState(),
+          status: StatusEnum.ERROR,
+          errorMsg: rma.loopWarning ?? 'Loop detected',
+        });
+        return;
+      }
+    }
   };
 
   let operatorType: 'computer' | 'browser' = 'computer';
@@ -155,9 +173,25 @@ export const runAgent = async (
     operatorType,
   );
 
+  const rmaEnabled = settings.rmaEnabled !== false;
+  let rma: RMAOrchestrator | null = null;
+  let finalSystemPrompt = systemPrompt;
+
+  if (rmaEnabled) {
+    const kb = new KnowledgeBase();
+    const reflectionSvc = new ReflectionService(
+      settings.reflectionBaseUrl || 'http://localhost:1234/v1',
+      settings.vlmApiKey || 'lm-studio',
+      settings.reflectionModelName || 'ui-tars-7b-dpo',
+    );
+    rma = new RMAOrchestrator(kb, reflectionSvc);
+    rma.setInstruction(instructions);
+    finalSystemPrompt = systemPrompt + rma.getSystemPromptAddition();
+  }
+
   const guiAgent = new GUIAgent({
     model: modelConfig,
-    systemPrompt: systemPrompt,
+    systemPrompt: finalSystemPrompt,
     logger,
     signal: abortController?.signal,
     operator: operator!,

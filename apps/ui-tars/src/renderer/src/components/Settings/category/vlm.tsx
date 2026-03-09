@@ -43,6 +43,9 @@ const formSchema = z.object({
   vlmApiKey: z.string().min(1),
   vlmModelName: z.string().min(1),
   useResponsesApi: z.boolean().default(false),
+  rmaEnabled: z.boolean().default(true),
+  reflectionBaseUrl: z.string().optional(),
+  reflectionModelName: z.string().optional(),
 });
 
 export interface VLMSettingsRef {
@@ -80,6 +83,9 @@ export function VLMSettings({
       vlmApiKey: '',
       vlmModelName: '',
       useResponsesApi: false,
+      rmaEnabled: true,
+      reflectionBaseUrl: '',
+      reflectionModelName: '',
     },
   });
   useEffect(() => {
@@ -90,17 +96,23 @@ export function VLMSettings({
         vlmApiKey: settings.vlmApiKey,
         vlmModelName: settings.vlmModelName,
         useResponsesApi: settings.useResponsesApi,
+        rmaEnabled: settings.rmaEnabled ?? true,
+        reflectionBaseUrl: settings.reflectionBaseUrl ?? '',
+        reflectionModelName: settings.reflectionModelName ?? '',
       });
     }
   }, [settings, form]);
 
-  const [newProvider, newBaseUrl, newApiKey, newModelName, newUseResponsesApi] =
+  const [newProvider, newBaseUrl, newApiKey, newModelName, newUseResponsesApi, newRmaEnabled, newReflectionBaseUrl, newReflectionModelName] =
     form.watch([
       'vlmProvider',
       'vlmBaseUrl',
       'vlmApiKey',
       'vlmModelName',
       'useResponsesApi',
+      'rmaEnabled',
+      'reflectionBaseUrl',
+      'reflectionModelName',
     ]);
 
   useEffect(() => {
@@ -153,6 +165,27 @@ export function VLMSettings({
           useResponsesApi: newUseResponsesApi,
         });
       }
+
+      if (newRmaEnabled !== settings.rmaEnabled) {
+        updateSetting({
+          ...settings,
+          rmaEnabled: newRmaEnabled,
+        });
+      }
+
+      if (newReflectionBaseUrl !== settings.reflectionBaseUrl) {
+        updateSetting({
+          ...settings,
+          reflectionBaseUrl: newReflectionBaseUrl,
+        });
+      }
+
+      if (newReflectionModelName !== settings.reflectionModelName) {
+        updateSetting({
+          ...settings,
+          reflectionModelName: newReflectionModelName,
+        });
+      }
     };
 
     validAndSave();
@@ -163,6 +196,9 @@ export function VLMSettings({
     newApiKey,
     newModelName,
     newUseResponsesApi,
+    newRmaEnabled,
+    newReflectionBaseUrl,
+    newReflectionModelName,
     settings,
     updateSetting,
     form,
@@ -429,6 +465,63 @@ export function VLMSettings({
               </FormItem>
             )}
           />
+
+          {/* RMA Settings */}
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-semibold mb-4">Reflection Memory (RMA)</h3>
+            <FormField
+              control={form.control}
+              name="rmaEnabled"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Enable RMA</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Enable Reflection Memory Agent for persistent memory and loop detection
+                      </p>
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="reflectionBaseUrl"
+              render={({ field }) => (
+                <FormItem className="mt-4">
+                  <FormLabel>Reflection Model Base URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="bg-white"
+                      placeholder="http://localhost:1234/v1"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="reflectionModelName"
+              render={({ field }) => (
+                <FormItem className="mt-4">
+                  <FormLabel>Reflection Model Name</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="bg-white"
+                      placeholder="ui-tars-7b-dpo"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
         </form>
       </Form>
 

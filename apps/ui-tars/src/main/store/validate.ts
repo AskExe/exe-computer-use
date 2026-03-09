@@ -33,6 +33,11 @@ export const PresetSchema = z.object({
   reportStorageBaseUrl: z.string().url().optional(),
   utioBaseUrl: z.string().url().optional(),
   presetSource: PresetSourceSchema.optional(),
+
+  // RMA Settings
+  rmaEnabled: z.boolean().optional(),
+  reflectionBaseUrl: z.string().optional(),
+  reflectionModelName: z.string().optional(),
 });
 
 export type PresetSource = z.infer<typeof PresetSourceSchema>;
