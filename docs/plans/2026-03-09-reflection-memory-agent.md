@@ -6,7 +6,321 @@
 
 **Architecture:** dHash runs on every screenshot to detect loops and significant screen changes. When a significant change is detected, UI-TARS-7B is called to summarize the step and update a persistent knowledge base. The knowledge base is injected into the action model's system prompt at the start of each run. Loop detection aborts stuck runs early and restarts with a warning.
 
-**Tech Stack:** TypeScript, `sharp` (already installed) for image resizing, `electron-store` (already installed) for persistent knowledge base, OpenAI SDK (already installed) for 7B calls via LM Studio at `localhost:1234/v1`.
+**Tech Stack:** TypeScript, `node-llama-cpp` (embedded llama.cpp with Metal support) for local model inference, `sharp` (already installed) for image resizing, `electron-store` (already installed) for persistent knowledge base, OpenAI SDK (already installed) for model calls via embedded LlamaServer.
+
+---
+
+## Task 0a: Install node-llama-cpp and configure packaging
+
+**Files:**
+- Modify: `apps/ui-tars/package.json`
+- Modify: `apps/ui-tars/electron-builder.yml`
+
+**What:** Install `node-llama-cpp` v3+. Configure electron-builder to include native `.node` bindings and unpack them from asar (native modules must not be asar-packed).
+
+**Step 1: Install**
+```bash
+cd apps/ui-tars
+pnpm add node-llama-cpp
+```
+
+**Step 2: Update electron-builder.yml**
+
+Add to `asarUnpack`:
+```yaml
+asarUnpack:
+  - "node_modules/node-llama-cpp/**"
+  - "node_modules/@node-llama-cpp/**"
+```
+
+**Step 3: Verify install**
+```bash
+node -e "const {getLlama} = require('node-llama-cpp'); console.log('ok')"
+```
+Expected: `ok`
+
+**Step 4: Commit**
+```bash
+git add apps/ui-tars/package.json apps/ui-tars/electron-builder.yml pnpm-lock.yaml
+git commit -m "feat(models): install node-llama-cpp for embedded local inference"
+```
+
+---
+
+## Task 0b: ModelManager Service
+
+**Files:**
+- Create: `apps/ui-tars/src/main/services/modelManager.ts`
+- Create: `apps/ui-tars/src/main/ipcRoutes/model.ts`
+
+**What:** Service that:
+1. Manages GGUF model files in `~/Library/Application Support/exe-computer-use/models/`
+2. Downloads models from HuggingFace with progress events
+3. Starts two embedded LlamaServer instances (action model port 11435, reflection model port 11436)
+4. Exposes IPC routes for renderer to check download status and trigger downloads
+
+Models to download:
+- Action: `https://huggingface.co/mradermacher/UI-TARS-2B-SFT-GGUF/resolve/main/UI-TARS-2B-SFT.Q4_K_M.gguf`
+- Reflection: `https://huggingface.co/mradermacher/UI-TARS-7B-DPO-GGUF/resolve/main/UI-TARS-7B-DPO.Q4_K_M.gguf`
+
+**Step 1: Implement ModelManager**
+
+```ts
+// apps/ui-tars/src/main/services/modelManager.ts
+import { app, BrowserWindow } from 'electron';
+import { getLlama, LlamaServer } from 'node-llama-cpp';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { pipeline } from 'stream/promises';
+import { logger } from '@main/logger';
+
+const ACTION_MODEL_URL = 'https://huggingface.co/mradermacher/UI-TARS-2B-SFT-GGUF/resolve/main/UI-TARS-2B-SFT.Q4_K_M.gguf';
+const REFLECTION_MODEL_URL = 'https://huggingface.co/mradermacher/UI-TARS-7B-DPO-GGUF/resolve/main/UI-TARS-7B-DPO.Q4_K_M.gguf';
+const ACTION_MODEL_PORT = 11435;
+const REFLECTION_MODEL_PORT = 11436;
+
+export class ModelManager {
+  private static instance: ModelManager;
+  private modelsDir: string;
+  private actionServer: LlamaServer | null = null;
+  private reflectionServer: LlamaServer | null = null;
+  private downloadProgress: Record<string, number> = {};
+
+  private constructor() {
+    this.modelsDir = join(app.getPath('userData'), 'models');
+    mkdirSync(this.modelsDir, { recursive: true });
+  }
+
+  static getInstance(): ModelManager {
+    if (!this.instance) this.instance = new ModelManager();
+    return this.instance;
+  }
+
+  getModelPath(type: 'action' | 'reflection'): string {
+    const name = type === 'action'
+      ? 'UI-TARS-2B-SFT.Q4_K_M.gguf'
+      : 'UI-TARS-7B-DPO.Q4_K_M.gguf';
+    return join(this.modelsDir, name);
+  }
+
+  isModelDownloaded(type: 'action' | 'reflection'): boolean {
+    return existsSync(this.getModelPath(type));
+  }
+
+  async downloadModel(type: 'action' | 'reflection'): Promise<void> {
+    const url = type === 'action' ? ACTION_MODEL_URL : REFLECTION_MODEL_URL;
+    const dest = this.getModelPath(type);
+    logger.info(`[ModelManager] Downloading ${type} model from ${url}`);
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Download failed: ${response.status}`);
+
+    const total = Number(response.headers.get('content-length') ?? 0);
+    let received = 0;
+
+    const fileStream = createWriteStream(dest);
+    const reader = response.body!.getReader();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      fileStream.write(value);
+      received += value.length;
+      const progress = total ? Math.round((received / total) * 100) : 0;
+      this.downloadProgress[type] = progress;
+      // Notify renderer
+      BrowserWindow.getAllWindows().forEach((w) =>
+        w.webContents.send('model-download-progress', { type, progress, received, total })
+      );
+    }
+    fileStream.end();
+    this.downloadProgress[type] = 100;
+    logger.info(`[ModelManager] ${type} model downloaded`);
+  }
+
+  async startServers(): Promise<void> {
+    const llama = await getLlama();
+
+    if (this.isModelDownloaded('action') && !this.actionServer) {
+      logger.info('[ModelManager] Starting action model server...');
+      const model = await llama.loadModel({ modelPath: this.getModelPath('action') });
+      this.actionServer = new LlamaServer({ model, port: ACTION_MODEL_PORT });
+      await this.actionServer.start();
+      logger.info(`[ModelManager] Action model server running on port ${ACTION_MODEL_PORT}`);
+    }
+
+    if (this.isModelDownloaded('reflection') && !this.reflectionServer) {
+      logger.info('[ModelManager] Starting reflection model server...');
+      const model = await llama.loadModel({ modelPath: this.getModelPath('reflection') });
+      this.reflectionServer = new LlamaServer({ model, port: REFLECTION_MODEL_PORT });
+      await this.reflectionServer.start();
+      logger.info(`[ModelManager] Reflection model server running on port ${REFLECTION_MODEL_PORT}`);
+    }
+  }
+
+  getStatus() {
+    return {
+      action: {
+        downloaded: this.isModelDownloaded('action'),
+        running: !!this.actionServer,
+        progress: this.downloadProgress['action'] ?? 0,
+        port: ACTION_MODEL_PORT,
+      },
+      reflection: {
+        downloaded: this.isModelDownloaded('reflection'),
+        running: !!this.reflectionServer,
+        progress: this.downloadProgress['reflection'] ?? 0,
+        port: REFLECTION_MODEL_PORT,
+      },
+    };
+  }
+
+  async stopServers(): Promise<void> {
+    this.actionServer?.stop();
+    this.reflectionServer?.stop();
+    this.actionServer = null;
+    this.reflectionServer = null;
+  }
+}
+```
+
+**Step 2: Add IPC routes**
+
+```ts
+// apps/ui-tars/src/main/ipcRoutes/model.ts
+import { ipcMain } from 'electron';
+import { ModelManager } from '../services/modelManager';
+
+export function registerModelRoutes() {
+  const mm = ModelManager.getInstance();
+
+  ipcMain.handle('model:status', () => mm.getStatus());
+  ipcMain.handle('model:download', (_, type: 'action' | 'reflection') =>
+    mm.downloadModel(type)
+  );
+  ipcMain.handle('model:startServers', () => mm.startServers());
+}
+```
+
+**Step 3: Register in main.ts**
+
+In `apps/ui-tars/src/main/main.ts`, import and call `registerModelRoutes()` and `ModelManager.getInstance().startServers()` after app is ready.
+
+**Step 4: Update default settings** in `setting.ts` to point to embedded servers:
+```ts
+vlmBaseUrl: 'http://localhost:11435/v1',
+reflectionBaseUrl: 'http://localhost:11436/v1',
+vlmApiKey: 'local',
+vlmModelName: 'UI-TARS-2B-SFT.Q4_K_M',
+reflectionModelName: 'UI-TARS-7B-DPO.Q4_K_M',
+```
+
+**Step 5: Commit**
+```bash
+git add apps/ui-tars/src/main/services/modelManager.ts apps/ui-tars/src/main/ipcRoutes/model.ts apps/ui-tars/src/main/main.ts apps/ui-tars/src/main/store/setting.ts
+git commit -m "feat(models): add ModelManager with embedded LlamaServer and HuggingFace download"
+```
+
+---
+
+## Task 0c: First-Run Model Download UI
+
+**Files:**
+- Create: `apps/ui-tars/src/renderer/src/pages/setup/ModelSetup.tsx`
+- Modify: `apps/ui-tars/src/renderer/src/App.tsx` (or router) to show ModelSetup if models not downloaded
+
+**What:** A setup screen shown on first launch if either model is missing. Shows two download progress bars (action model ~1.5GB, reflection model ~4.5GB) with a "Download" button per model. Once both are downloaded, shows "Launch" button which starts the servers and enters the main app.
+
+```tsx
+// apps/ui-tars/src/renderer/src/pages/setup/ModelSetup.tsx
+import { useState, useEffect } from 'react';
+
+interface ModelStatus {
+  downloaded: boolean;
+  running: boolean;
+  progress: number;
+}
+
+export function ModelSetup({ onComplete }: { onComplete: () => void }) {
+  const [status, setStatus] = useState<{
+    action: ModelStatus;
+    reflection: ModelStatus;
+  } | null>(null);
+
+  useEffect(() => {
+    window.electron.ipcRenderer.invoke('model:status').then(setStatus);
+    const unsub = window.electron.ipcRenderer.on(
+      'model-download-progress',
+      (_, { type, progress }) => {
+        setStatus((prev) =>
+          prev ? { ...prev, [type]: { ...prev[type], progress } } : prev
+        );
+      }
+    );
+    return unsub;
+  }, []);
+
+  const download = (type: 'action' | 'reflection') =>
+    window.electron.ipcRenderer.invoke('model:download', type);
+
+  const launch = async () => {
+    await window.electron.ipcRenderer.invoke('model:startServers');
+    onComplete();
+  };
+
+  const bothReady =
+    status?.action.downloaded && status?.reflection.downloaded;
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen gap-6 p-8">
+      <h1 className="text-2xl font-bold">Exe Computer Use — First Time Setup</h1>
+      <p className="text-muted-foreground text-center max-w-md">
+        Download the AI models to get started. Models are stored locally and
+        never leave your machine.
+      </p>
+
+      {['action', 'reflection'].map((type) => {
+        const s = status?.[type as 'action' | 'reflection'];
+        const label = type === 'action' ? 'UI-TARS-2B (Action Model, ~1.5GB)' : 'UI-TARS-7B (Reflection Model, ~4.5GB)';
+        return (
+          <div key={type} className="w-full max-w-md border rounded-lg p-4 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-medium">{label}</span>
+              {s?.downloaded
+                ? <span className="text-green-500 text-sm">✓ Ready</span>
+                : <button onClick={() => download(type as any)} className="text-sm px-3 py-1 bg-primary text-primary-foreground rounded">Download</button>
+              }
+            </div>
+            {!s?.downloaded && s?.progress > 0 && (
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${s.progress}%` }} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        disabled={!bothReady}
+        onClick={launch}
+        className="px-6 py-2 bg-primary text-primary-foreground rounded-lg disabled:opacity-50"
+      >
+        Launch
+      </button>
+    </div>
+  );
+}
+```
+
+**Step 2: Gate main app behind model check**
+
+In the app's root component, check `model:status` on mount. If either model is missing, show `<ModelSetup>` instead of the main app.
+
+**Step 3: Commit**
+```bash
+git add apps/ui-tars/src/renderer/src/pages/setup/
+git commit -m "feat(models): add first-run ModelSetup screen with download progress"
+```
 
 ---
 
