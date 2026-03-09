@@ -4,12 +4,7 @@ import {
   SearchEngineForSettings,
   VLMProviderV2,
 } from '../store/types';
-import {
-  getSystemPrompt,
-  getSystemPromptDoubao_15_15B,
-  getSystemPromptDoubao_15_20B,
-  getSystemPromptV1_5,
-} from '../agent/prompts';
+import { getSystemPrompt, getSystemPromptV1_5 } from '../agent/prompts';
 import {
   closeScreenMarker,
   hideScreenWaterFlow,
@@ -20,21 +15,11 @@ import {
 import { hideMainWindow, showMainWindow } from '../window';
 import { SearchEngine } from '@ui-tars/operator-browser';
 
+// All providers use V1_5 prompt by default; user sets the model name manually
 export const getModelVersion = (
-  provider: VLMProviderV2 | undefined,
+  _provider: VLMProviderV2 | undefined,
 ): UITarsModelVersion => {
-  switch (provider) {
-    case VLMProviderV2.ui_tars_1_5:
-      return UITarsModelVersion.V1_5;
-    case VLMProviderV2.ui_tars_1_0:
-      return UITarsModelVersion.V1_0;
-    case VLMProviderV2.doubao_1_5:
-      return UITarsModelVersion.DOUBAO_1_5_15B;
-    case VLMProviderV2.doubao_1_5_vl:
-      return UITarsModelVersion.DOUBAO_1_5_20B;
-    default:
-      return UITarsModelVersion.V1_0;
-  }
+  return UITarsModelVersion.V1_5;
 };
 
 export const getSpByModelVersion = (
@@ -43,10 +28,6 @@ export const getSpByModelVersion = (
   operatorType: 'browser' | 'computer',
 ) => {
   switch (modelVersion) {
-    case UITarsModelVersion.DOUBAO_1_5_20B:
-      return getSystemPromptDoubao_15_20B(language, operatorType);
-    case UITarsModelVersion.DOUBAO_1_5_15B:
-      return getSystemPromptDoubao_15_15B(language);
     case UITarsModelVersion.V1_5:
       return getSystemPromptV1_5(language, 'normal');
     default:
@@ -62,10 +43,6 @@ export const getLocalBrowserSearchEngine = (
 
 export const beforeAgentRun = async (operator: Operator) => {
   switch (operator) {
-    case Operator.RemoteComputer:
-      break;
-    case Operator.RemoteBrowser:
-      break;
     case Operator.LocalComputer:
       showWidgetWindow();
       showScreenWaterFlow();
@@ -82,10 +59,6 @@ export const beforeAgentRun = async (operator: Operator) => {
 
 export const afterAgentRun = (operator: Operator) => {
   switch (operator) {
-    case Operator.RemoteComputer:
-      break;
-    case Operator.RemoteBrowser:
-      break;
     case Operator.LocalComputer:
       hideWidgetWindow();
       closeScreenMarker();

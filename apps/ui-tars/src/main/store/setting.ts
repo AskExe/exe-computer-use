@@ -19,10 +19,10 @@ import { BrowserWindow } from 'electron';
 
 export const DEFAULT_SETTING: LocalStore = {
   language: 'en',
-  vlmProvider: (env.vlmProvider as VLMProviderV2) || '',
-  vlmBaseUrl: env.vlmBaseUrl || '',
-  vlmApiKey: env.vlmApiKey || '',
-  vlmModelName: env.vlmModelName || '',
+  vlmProvider: (env.vlmProvider as VLMProviderV2) || VLMProviderV2.ollama,
+  vlmBaseUrl: env.vlmBaseUrl || 'http://localhost:11434/v1',
+  vlmApiKey: env.vlmApiKey || 'ollama',
+  vlmModelName: env.vlmModelName || 'ui-tars',
   useResponsesApi: false,
   maxLoopCount: 100,
   loopIntervalInMs: 1000,

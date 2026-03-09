@@ -35,17 +35,11 @@ export type AppState = {
   browserAvailable: boolean;
 };
 
-export enum VlmProvider {
-  // Ollama = 'ollama',
-  Huggingface = 'Hugging Face',
-  vLLM = 'vLLM',
-}
-
 export enum VLMProviderV2 {
-  ui_tars_1_0 = 'Hugging Face for UI-TARS-1.0',
-  ui_tars_1_5 = 'Hugging Face for UI-TARS-1.5',
-  doubao_1_5 = 'VolcEngine Ark for Doubao-1.5-UI-TARS',
-  doubao_1_5_vl = 'VolcEngine Ark for Doubao-1.5-thinking-vision-pro',
+  ollama = 'Ollama',
+  lmstudio = 'LM Studio',
+  vllm = 'vLLM',
+  custom = 'Custom (OpenAI-compatible)',
 }
 
 export enum SearchEngineForSettings {
@@ -55,8 +49,6 @@ export enum SearchEngineForSettings {
 }
 
 export enum Operator {
-  RemoteComputer = 'Remote Computer Operator',
-  RemoteBrowser = 'Remote Browser Operator',
   LocalComputer = 'Local Computer Operator',
   LocalBrowser = 'Local Browser Operator',
 }

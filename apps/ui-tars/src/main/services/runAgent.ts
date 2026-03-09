@@ -11,14 +11,7 @@ import { GUIAgent, type GUIAgentConfig } from '@ui-tars/sdk';
 import { markClickPosition } from '@main/utils/image';
 import { UTIOService } from '@main/services/utio';
 import { NutJSElectronOperator } from '../agent/operator';
-import {
-  createRemoteBrowserOperator,
-  RemoteComputerOperator,
-} from '../remote/operators';
-import {
-  DefaultBrowserOperator,
-  RemoteBrowserOperator,
-} from '@ui-tars/operator-browser';
+import { DefaultBrowserOperator } from '@ui-tars/operator-browser';
 import { showPredictionMarker } from '@main/window/ScreenMarker';
 import { SettingStore } from '@main/store/setting';
 import { AppState, Operator } from '@main/store/types';
@@ -31,10 +24,6 @@ import {
   afterAgentRun,
   getLocalBrowserSearchEngine,
 } from '../utils/agent';
-import { FREE_MODEL_BASE_URL } from '../remote/shared';
-import { getAuthHeader } from '../remote/auth';
-import { ProxyClient } from '../remote/proxyClient';
-import { UITarsModelConfig } from '@ui-tars/sdk/core';
 
 export const runAgent = async (
   setState: (state: AppState) => void,
@@ -56,7 +45,6 @@ export const runAgent = async (
     const { status, conversations, ...restUserData } = data;
     logger.info('[onGUIAgentData] status', status, conversations.length);
 
-    // add SoM to conversations
     const conversationsWithSoM: ConversationWithSoM[] = await Promise.all(
       conversations.map(async (conv) => {
         const { screenshotContext, predictionParsed } = conv;
@@ -119,11 +107,7 @@ export const runAgent = async (
   };
 
   let operatorType: 'computer' | 'browser' = 'computer';
-  let operator:
-    | NutJSElectronOperator
-    | DefaultBrowserOperator
-    | RemoteComputerOperator
-    | RemoteBrowserOperator;
+  let operator: NutJSElectronOperator | DefaultBrowserOperator;
 
   switch (settings.operator) {
     case Operator.LocalComputer:
@@ -142,7 +126,6 @@ export const runAgent = async (
         });
         return;
       }
-
       operator = await DefaultBrowserOperator.getInstance(
         false,
         false,
@@ -152,41 +135,19 @@ export const runAgent = async (
       );
       operatorType = 'browser';
       break;
-    case Operator.RemoteComputer:
-      operator = await RemoteComputerOperator.create();
-      operatorType = 'computer';
-      break;
-    case Operator.RemoteBrowser:
-      operator = await createRemoteBrowserOperator();
-      operatorType = 'browser';
-      break;
     default:
+      operator = new NutJSElectronOperator();
+      operatorType = 'computer';
       break;
   }
 
-  let modelVersion = getModelVersion(settings.vlmProvider);
-  let modelConfig: UITarsModelConfig = {
+  const modelVersion = getModelVersion(settings.vlmProvider);
+  const modelConfig = {
     baseURL: settings.vlmBaseUrl,
-    apiKey: settings.vlmApiKey,
+    apiKey: settings.vlmApiKey || 'local',
     model: settings.vlmModelName,
     useResponsesApi: settings.useResponsesApi,
   };
-  let modelAuthHdrs: Record<string, string> = {};
-
-  if (
-    settings.operator === Operator.RemoteComputer ||
-    settings.operator === Operator.RemoteBrowser
-  ) {
-    const useResponsesApi = await ProxyClient.getRemoteVLMResponseApiSupport();
-    modelConfig = {
-      baseURL: FREE_MODEL_BASE_URL,
-      apiKey: '',
-      model: '',
-      useResponsesApi,
-    };
-    modelAuthHdrs = await getAuthHeader();
-    modelVersion = await ProxyClient.getRemoteVLMProvider();
-  }
 
   const systemPrompt = getSpByModelVersion(
     modelVersion,
@@ -239,18 +200,16 @@ export const runAgent = async (
 
   const startTime = Date.now();
 
-  await guiAgent
-    .run(instructions, sessionHistoryMessages, modelAuthHdrs)
-    .catch((e) => {
-      logger.error('[runAgentLoop error]', e);
-      setState({
-        ...getState(),
-        status: StatusEnum.ERROR,
-        errorMsg: e.message,
-      });
+  await guiAgent.run(instructions, sessionHistoryMessages).catch((e) => {
+    logger.error('[runAgentLoop error]', e);
+    setState({
+      ...getState(),
+      status: StatusEnum.ERROR,
+      errorMsg: e.message,
     });
+  });
 
-  logger.info('[runAgent Totoal cost]: ', (Date.now() - startTime) / 1000, 's');
+  logger.info('[runAgent Total cost]: ', (Date.now() - startTime) / 1000, 's');
 
   afterAgentRun(settings.operator);
 };
