@@ -1,10 +1,22 @@
 import { computeDHash } from './dHash';
 import { LoopDetector } from './loopDetector';
-import { KnowledgeBase } from './knowledgeBase';
-import { ReflectionService } from './reflectionService';
+import { KnowledgeBase, StructuredFact } from './knowledgeBase';
+import { ReflectionService, ElementFact } from './reflectionService';
 import { logger } from '@main/logger';
 
 export { KnowledgeBase } from './knowledgeBase';
+
+function convertToStructuredFact(fact: ElementFact): StructuredFact {
+  const loc = fact.location ? ` at ${fact.location}` : '';
+  const sel = fact.selector ? ` [${fact.selector}]` : '';
+  const text = `${fact.element || fact.type}: ${fact.description}${loc}${sel}`;
+  return {
+    text,
+    domain: fact.domain,
+    type: fact.type,
+    element: fact.element,
+  };
+}
 
 export class RMAOrchestrator {
   private loopDetector = new LoopDetector();
@@ -45,9 +57,12 @@ export class RMAOrchestrator {
           lastAction,
           this.instruction,
         );
-        if (result.newFact) {
-          this.kb.addFact(result.newFact, result.domain);
-          logger.info('[RMA] New fact stored:', result.newFact);
+        if (result.facts.length > 0) {
+          for (const fact of result.facts) {
+            const structured = convertToStructuredFact(fact);
+            this.kb.addStructuredFact(structured);
+            logger.info('[RMA] New fact stored:', structured.text);
+          }
         }
       } catch (e) {
         logger.error('[RMA] Reflection failed:', e);

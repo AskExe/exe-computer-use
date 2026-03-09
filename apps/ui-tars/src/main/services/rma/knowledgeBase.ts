@@ -3,15 +3,17 @@ import ElectronStore from 'electron-store';
 const MAX_FACTS_PER_RUN = 10;
 const MAX_STORED_FACTS = 100;
 
-interface Fact {
+export interface StructuredFact {
   text: string;
   domain: string | null;
+  type?: 'element' | 'structure' | 'workflow';
+  element?: string;
   addedAt: number;
   useCount: number;
 }
 
 interface KBStore {
-  facts: Fact[];
+  facts: StructuredFact[];
 }
 
 export class KnowledgeBase {
@@ -24,15 +26,25 @@ export class KnowledgeBase {
     });
   }
 
-  addFact(text: string, domain: string | null = null): void {
+  addStructuredFact(fact: Omit<StructuredFact, 'addedAt' | 'useCount'>): void {
     const facts = this.store.get('facts');
-    if (facts.some((f) => f.text === text)) return;
-    facts.push({ text, domain, addedAt: Date.now(), useCount: 0 });
+    const existing = facts.find((f) => f.text === fact.text);
+    if (existing) {
+      existing.useCount++;
+      this.store.set('facts', facts);
+      return;
+    }
+    const newFact: StructuredFact = {
+      ...fact,
+      addedAt: Date.now(),
+      useCount: 1,
+    };
+    facts.push(newFact);
     if (facts.length > MAX_STORED_FACTS) facts.shift();
     this.store.set('facts', facts);
   }
 
-  getRelevantFacts(instruction: string): string[] {
+  getRelevantFacts(instruction: string): StructuredFact[] {
     const facts = this.store.get('facts');
     const instructionLower = instruction.toLowerCase();
 
@@ -43,13 +55,43 @@ export class KnowledgeBase {
 
     relevant.sort((a, b) => b.useCount - a.useCount || b.addedAt - a.addedAt);
 
-    return relevant.slice(0, MAX_FACTS_PER_RUN).map((f) => f.text);
+    return relevant.slice(0, MAX_FACTS_PER_RUN);
   }
 
   formatForPrompt(instruction: string): string {
     const facts = this.getRelevantFacts(instruction);
     if (facts.length === 0) return '';
-    return `\n\n## Past experience (apply this knowledge):\n${facts.map((f) => `- ${f}`).join('\n')}`;
+
+    const byDomain = new Map<string, StructuredFact[]>();
+    const global: StructuredFact[] = [];
+
+    for (const fact of facts) {
+      if (fact.domain) {
+        const existing = byDomain.get(fact.domain) || [];
+        existing.push(fact);
+        byDomain.set(fact.domain, existing);
+      } else {
+        global.push(fact);
+      }
+    }
+
+    let output = '\n\n## Page Structure & Elements (learned from past runs):\n';
+
+    if (global.length > 0) {
+      output += '\n### Global:\n';
+      for (const f of global) {
+        output += `- ${f.text}\n`;
+      }
+    }
+
+    for (const [domain, domainFacts] of byDomain) {
+      output += `\n### ${domain}:\n`;
+      for (const f of domainFacts) {
+        output += `- ${f.text}\n`;
+      }
+    }
+
+    return output;
   }
 
   clear(): void {
