@@ -31,7 +31,7 @@ export const DEFAULT_SETTING: LocalStore = {
   reportStorageBaseUrl: '',
   utioBaseUrl: '',
   rmaEnabled: true,
-  reflectionBaseUrl: 'http://localhost:1234/v1',
+  reflectionBaseUrl: 'http://localhost:11436/v1',
   reflectionModelName: 'ui-tars-7b-dpo',
 };
 
