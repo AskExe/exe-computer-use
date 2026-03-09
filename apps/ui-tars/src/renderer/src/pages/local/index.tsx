@@ -273,7 +273,7 @@ const LocalOperator = () => {
       <NavHeader
         title={state.operator}
         onBack={handleBack}
-        docUrl="https://github.com/bytedance/UI-TARS-desktop/"
+        docUrl="https://github.com/AskExe/exe-computer-use"
       ></NavHeader>
       <div className="px-5 pb-5 flex flex-1 gap-5">
         <Card className="flex-1 basis-2/5 px-0 py-4 gap-4 h-[calc(100vh-76px)]">

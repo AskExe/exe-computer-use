@@ -213,7 +213,7 @@ export function ShareOptions() {
             <AlertDialogTitle>Share Report</AlertDialogTitle>
             <AlertDialogDescription>
               📢 Would you like to share your report to help us improve{' '}
-              <b>UI-TARS</b>? This includes your screen recordings and actions.
+              <b>Exe Computer Use</b>? This includes your screen recordings and actions.
               <br />
               <br />
               💡 We encourage you to create a clean and privacy-free desktop

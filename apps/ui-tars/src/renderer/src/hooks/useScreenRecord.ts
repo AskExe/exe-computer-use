@@ -9,7 +9,7 @@ import { Conversation } from '@ui-tars/shared/types';
 import { api } from '@renderer/api';
 
 export const useScreenRecord = (
-  watermarkText = `© ${new Date().getFullYear()} UI-TARS Desktop`,
+  watermarkText = `© ${new Date().getFullYear()} Exe Computer Use`,
 ) => {
   const DOMURL = window.URL || window.webkitURL || window;
   const [isRecording, setIsRecording] = useState(false);

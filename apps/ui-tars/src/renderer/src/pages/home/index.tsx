@@ -159,7 +159,7 @@ const Home = () => {
       <DragArea></DragArea>
       <div className="w-full h-full flex flex-col items-center justify-center">
         <h1 className="text-2xl font-semibold mt-1 mb-8">
-          Welcome to UI-TARS Desktop
+          Welcome to Exe Computer Use
         </h1>
         <Alert className="mb-4 w-[824px]">
           <Info className="h-4 w-4 mt-2" />
@@ -202,7 +202,7 @@ const Home = () => {
             <CardHeader className="px-5">
               <CardTitle>Computer Operator</CardTitle>
               <CardDescription>
-                Use the UI-TARS model to automate and complete tasks directly on
+                Use the Exe Computer Use to automate and complete tasks directly on
                 your computer with AI assistance.
               </CardDescription>
             </CardHeader>
@@ -226,7 +226,7 @@ const Home = () => {
             <CardHeader className="px-5">
               <CardTitle>Browser Operator</CardTitle>
               <CardDescription>
-                Let the UI-TARS model help you automate browser tasks, from
+                Let the Exe Computer Use help you automate browser tasks, from
                 navigating pages to filling out forms.
               </CardDescription>
             </CardHeader>
