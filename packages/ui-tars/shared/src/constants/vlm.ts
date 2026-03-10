@@ -11,6 +11,7 @@ export const DEFAULT_FACTOR = 1000;
 export const MIN_PIXELS = 100 * IMAGE_FACTOR * IMAGE_FACTOR;
 export const MAX_PIXELS_V1_0 = 2700 * IMAGE_FACTOR * IMAGE_FACTOR;
 export const MAX_PIXELS_V1_5 = 16384 * IMAGE_FACTOR * IMAGE_FACTOR;
+export const MAX_PIXELS_DOUBAO = 16384 * IMAGE_FACTOR * IMAGE_FACTOR;
 export const MAX_RATIO = 200;
 
 export enum VlmModeEnum {
@@ -21,6 +22,8 @@ export enum VlmModeEnum {
 export enum UITarsModelVersion {
   V1_0 = '1.0',
   V1_5 = '1.5',
+  DOUBAO_1_5_15B = 'doubao-1.5-15b',
+  DOUBAO_1_5_20B = 'doubao-1.5-20b',
 }
 
 export const VlmModeEnumOptions = {

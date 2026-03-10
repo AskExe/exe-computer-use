@@ -20,8 +20,6 @@ import { logger } from '@main/logger';
 import { createMainWindow } from '@main/window/index';
 import { registerIpcMain } from '@ui-tars/electron-ipc/main';
 import { ipcRoutes } from './ipcRoutes';
-import { registerModelRoutes } from './ipcRoutes/model';
-import { ModelManager } from './services/modelManager';
 import { getTargetDisplay } from './utils/screen';
 
 import { UTIOService } from './services/utio';
@@ -198,18 +196,8 @@ const registerIPCHandlers = (
   });
 
   registerSettingsHandlers();
-  registerModelRoutes();
   // register ipc services routes
   registerIpcMain(ipcRoutes);
-
-  // Start embedded model servers if models are available
-  (async () => {
-    try {
-      await ModelManager.getInstance().startServers();
-    } catch (e) {
-      logger.error('[ModelManager] Failed to start servers:', e);
-    }
-  })();
 
   return { unsubscribe };
 };

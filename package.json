@@ -21,7 +21,10 @@
     "prepare": "husky"
   },
   "pnpm": {
-    "patchedDependencies": {}
+    "patchedDependencies": {},
+    "overrides": {
+      "get-east-asian-width": "^1.5.0"
+    }
   },
   "devDependencies": {
     "@common/configs": "workspace:*",

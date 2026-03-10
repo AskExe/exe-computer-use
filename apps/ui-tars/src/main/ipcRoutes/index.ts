@@ -8,7 +8,6 @@ import { windowRoute } from './window';
 import { permissionRoute } from './permission';
 import { agentRoute } from './agent';
 import { browserRoute } from './browser';
-import { remoteResourceRouter } from './remoteResource';
 import { settingRoute } from './setting';
 import { modelRoute } from './model';
 
@@ -19,7 +18,6 @@ export const ipcRoutes = t.router({
   ...windowRoute,
   ...permissionRoute,
   ...agentRoute,
-  ...remoteResourceRouter,
   ...browserRoute,
   ...settingRoute,
   ...modelRoute,
