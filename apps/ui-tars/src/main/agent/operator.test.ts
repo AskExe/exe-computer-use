@@ -21,6 +21,28 @@ vi.mock('electron', () => ({
 
 vi.mock('@main/env', () => ({
   isMacOS: false,
+  isProd: false,
+  isDev: true,
+  isWindows: false,
+  isLinux: false,
+  vlmProvider: undefined,
+  vlmBaseUrl: undefined,
+  vlmApiKey: undefined,
+  vlmModelName: undefined,
+}));
+
+vi.mock('@main/utils/screen', () => ({
+  getScreenSize: vi.fn(() => ({
+    physicalSize: { width: 1920, height: 1080 },
+    logicalSize: { width: 1920, height: 1080 },
+    scaleFactor: 1,
+    id: 1,
+  })),
+  getTargetDisplay: vi.fn(() => ({
+    id: 1,
+    size: { width: 1920, height: 1080 },
+    scaleFactor: 1,
+  })),
 }));
 
 describe('NutJSElectronOperator', () => {
@@ -46,8 +68,10 @@ describe('NutJSElectronOperator', () => {
         display_id: '1',
         thumbnail: {
           toPNG: () => Buffer.from('mock-image'),
+          toJPEG: () => Buffer.from('mock-image'),
           resize: () => ({
             toPNG: () => Buffer.from('mock-image'),
+            toJPEG: () => Buffer.from('mock-image'),
           }),
         },
       };

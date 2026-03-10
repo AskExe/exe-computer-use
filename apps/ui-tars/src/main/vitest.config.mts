@@ -16,13 +16,14 @@ export default defineProject({
     globals: true,
     setupFiles: [resolve(__dirname, '../../scripts/vitest-setup.ts')],
     environment: 'node',
-    includeSource: [resolve(__dirname, '.')],
+    include: ['**/*.test.ts'],
+    exclude: ['**/e2e/**', '**/node_modules/**'],
   },
 
   plugins: [
     // @ts-ignore
     tsconfigPath({
-      projects: ['../../tsconfig.node.json'],
+      projects: ['tsconfig.node.json'],
     }),
   ],
 });
