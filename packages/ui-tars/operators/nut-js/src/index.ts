@@ -237,6 +237,7 @@ export class NutJSOperator extends Operator {
         await moveStraightTo(startX, startY);
         await sleep(100);
         await mouse.click(Button.RIGHT);
+        break;
 
       case 'middle_click':
         logger.info('[NutjsOperator] middle_click');
