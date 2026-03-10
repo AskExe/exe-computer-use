@@ -2,10 +2,25 @@ import Foundation
 import CoreGraphics
 import AppKit
 
+// Custom Bounds struct instead of CGRect (CGRect Codable is unreliable pre-Swift 5.9)
+struct Bounds: Codable {
+    let x: CGFloat
+    let y: CGFloat
+    let width: CGFloat
+    let height: CGFloat
+    
+    init(from rect: CGRect) {
+        self.x = rect.origin.x
+        self.y = rect.origin.y
+        self.width = rect.size.width
+        self.height = rect.size.height
+    }
+}
+
 struct WindowInfo: Codable {
     let pid: Int32
     let name: String
-    let bounds: CGRect
+    let bounds: Bounds
     let bundleId: String?
 }
 
@@ -73,7 +88,7 @@ func findWindowAtPoint(x: Int, y: Int) -> WindowInfo? {
                 bundleId = app.bundleIdentifier
             }
             
-            return WindowInfo(pid: pid, name: name, bounds: frame, bundleId: bundleId)
+            return WindowInfo(pid: pid, name: name, bounds: Bounds(from: frame), bundleId: bundleId)
         }
     }
     
