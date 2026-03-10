@@ -21,7 +21,7 @@ const getDisplayById = (id: number): Display | null => {
   return displays.find((d) => d.id === id) || null;
 };
 
-const getTargetDisplay = (): Display => {
+export const getTargetDisplay = (): Display => {
   const targetId = SettingStore.get('targetDisplayId');
   if (targetId) {
     const display = getDisplayById(targetId);

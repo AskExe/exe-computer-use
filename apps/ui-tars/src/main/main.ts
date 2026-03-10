@@ -11,7 +11,6 @@ import {
   ipcMain,
   session,
   WebContentsView,
-  screen,
 } from 'electron';
 import squirrelStartup from 'electron-squirrel-startup';
 import ElectronStore from 'electron-store';
@@ -23,7 +22,7 @@ import { registerIpcMain } from '@ui-tars/electron-ipc/main';
 import { ipcRoutes } from './ipcRoutes';
 import { registerModelRoutes } from './ipcRoutes/model';
 import { ModelManager } from './services/modelManager';
-import { getAllDisplays, getTargetDisplay } from './utils/screen';
+import { getTargetDisplay } from './utils/screen';
 
 import { UTIOService } from './services/utio';
 import { store } from './store/create';
@@ -204,11 +203,13 @@ const registerIPCHandlers = (
   registerIpcMain(ipcRoutes);
 
   // Start embedded model servers if models are available
-  try {
-    await ModelManager.getInstance().startServers();
-  } catch (e) {
-    logger.error('[ModelManager] Failed to start servers:', e);
-  }
+  (async () => {
+    try {
+      await ModelManager.getInstance().startServers();
+    } catch (e) {
+      logger.error('[ModelManager] Failed to start servers:', e);
+    }
+  })();
 
   return { unsubscribe };
 };
