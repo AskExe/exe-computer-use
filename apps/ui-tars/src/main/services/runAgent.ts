@@ -180,8 +180,8 @@ export const runAgent = async (
   if (rmaEnabled) {
     const kb = new KnowledgeBase();
     const reflectionSvc = new ReflectionService(
-      settings.reflectionBaseUrl || 'http://localhost:1234/v1',
-      settings.vlmApiKey || 'lm-studio',
+      settings.reflectionBaseUrl || '',
+      settings.vlmApiKey || '',
       settings.reflectionModelName || 'ui-tars-7b-dpo',
     );
     rma = new RMAOrchestrator(kb, reflectionSvc);

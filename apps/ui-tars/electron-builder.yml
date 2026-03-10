@@ -11,8 +11,6 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
-  - "node_modules/node-llama-cpp/**"
-  - "node_modules/@node-llama-cpp/**"
   - "node_modules/@ui-tars/operator-nut-js/native/**"
 win:
   executableName: Exe Computer Use
@@ -43,6 +41,7 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: AskExe
+  repo: exe-computer-use
   updaterCacheDirName: exe-computer-use-updater

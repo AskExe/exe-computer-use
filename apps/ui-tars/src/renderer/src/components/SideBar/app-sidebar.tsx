@@ -61,27 +61,11 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
       if (!session) return;
 
       const operator = session.meta.operator || Operator.LocalComputer;
-      const isFree = session.meta.isFree ?? true;
 
-      const getRouter = () => {
-        if (
-          operator === Operator.RemoteBrowser ||
-          operator === Operator.RemoteComputer
-        ) {
-          if (isFree) {
-            return '/free-remote';
-          }
-          return '/paid-remote';
-        }
-
-        return '/local';
-      };
-
-      navigate(getRouter(), {
+      navigate('/local', {
         state: {
           operator,
           sessionId,
-          isFree,
           from: 'history',
         },
       });

@@ -30,8 +30,8 @@ export const DEFAULT_SETTING: LocalStore = {
   operator: Operator.LocalComputer,
   reportStorageBaseUrl: '',
   utioBaseUrl: '',
-  rmaEnabled: true,
-  reflectionBaseUrl: 'http://localhost:11436/v1',
+  rmaEnabled: false,
+  reflectionBaseUrl: '',
   reflectionModelName: 'ui-tars-7b-dpo',
   targetDisplayId: undefined,
 };

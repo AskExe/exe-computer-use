@@ -64,23 +64,7 @@ const ChatInput = ({
   }, [status]);
 
   useEffect(() => {
-    switch (operator) {
-      case Operator.RemoteComputer:
-        updateSetting({ ...settings, operator: Operator.RemoteComputer });
-        break;
-      case Operator.RemoteBrowser:
-        updateSetting({ ...settings, operator: Operator.RemoteBrowser });
-        break;
-      case Operator.LocalComputer:
-        updateSetting({ ...settings, operator: Operator.LocalComputer });
-        break;
-      case Operator.LocalBrowser:
-        updateSetting({ ...settings, operator: Operator.LocalBrowser });
-        break;
-      default:
-        updateSetting({ ...settings, operator: Operator.LocalComputer });
-        break;
-    }
+    updateSetting({ ...settings, operator });
   }, [operator]);
 
   const getInstantInstructions = () => {

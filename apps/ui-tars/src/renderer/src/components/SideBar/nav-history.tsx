@@ -40,24 +40,9 @@ import { ShareOptions } from './share';
 import { Operator } from '@main/store/types';
 import { DeleteSessionDialog } from '@renderer/components/AlertDialog/delSessionDialog';
 
-const getIcon = (operator: Operator, isActive: boolean) => {
-  const isRemote =
-    operator === Operator.RemoteComputer || operator === Operator.RemoteBrowser;
-  const isComputer =
-    operator === Operator.LocalComputer || operator === Operator.RemoteComputer;
-
-  const MainIcon = isComputer ? Laptop : Compass;
-
-  return (
-    <div className="relative flex items-center gap-1">
-      <MainIcon className="w-4 h-4" />
-      <div
-        className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full text-[6px] flex items-center justify-center font-bold leading-none bg-white border border-gray-500 ${isActive ? 'text-neutral-700 border-neutral-700' : 'text-neutral-500 border-neutral-500'}`}
-      >
-        {isRemote ? 'R' : 'L'}
-      </div>
-    </div>
-  );
+const getIcon = (operator: Operator, _isActive: boolean) => {
+  const MainIcon = operator === Operator.LocalComputer ? Laptop : Compass;
+  return <MainIcon className="w-4 h-4" />;
 };
 
 export function NavHistory({

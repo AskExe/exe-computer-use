@@ -7,6 +7,7 @@ import {
   app,
   BrowserView,
   BrowserWindow,
+  crashReporter,
   desktopCapturer,
   ipcMain,
   session,
@@ -40,6 +41,9 @@ app.commandLine.appendSwitch('force-renderer-accessibility');
 if (squirrelStartup) {
   app.quit();
 }
+
+// Start crash reporter — writes minidumps to app.getPath('crashDumps')
+crashReporter.start({ uploadToServer: false });
 
 logger.debug('[env]', env);
 

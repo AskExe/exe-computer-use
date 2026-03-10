@@ -77,6 +77,12 @@ export function ReportSettings() {
 
   return (
     <>
+      <p className="text-xs text-muted-foreground mb-4">
+        These endpoints are <strong>disabled by default</strong> and only active
+        when you provide a URL. When configured, the app may send platform info
+        (OS, screen size), task instructions, and screenshots to the endpoint
+        you specify. No data is sent to third parties by default.
+      </p>
       <Form {...form}>
         <form className="space-y-8">
           {/* Report Settings Fields */}
@@ -102,7 +108,7 @@ export function ReportSettings() {
             name="utioBaseUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>UTIO Base URL</FormLabel>
+                <FormLabel>Usage Telemetry URL (UTIO)</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="https://your-utio-endpoint.com/collect"
