@@ -13,6 +13,7 @@ asarUnpack:
   - resources/**
   - "node_modules/node-llama-cpp/**"
   - "node_modules/@node-llama-cpp/**"
+  - "node_modules/@ui-tars/operator-nut-js/native/**"
 win:
   executableName: Exe Computer Use
 nsis:

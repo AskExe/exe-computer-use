@@ -23,12 +23,14 @@
     "dev": "rslib build --watch",
     "build": "rslib build",
     "build:watch": "rslib build --watch",
+    "build:native": "swiftc -o native/TargetedInput native/TargetedInput.swift",
     "prepare": "npm run build",
     "test": "vitest"
   },
   "license": "Apache-2.0",
   "files": [
-    "dist"
+    "dist",
+    "native"
   ],
   "publishConfig": {
     "access": "public",

@@ -26,6 +26,11 @@ import {
   clipboard,
 } from '@computer-use/nut-js';
 import Big from 'big.js';
+import { 
+  findWindowAtPoint, 
+  postMouseClick, 
+  postTextInput 
+} from './targetedInput';
 
 const moveStraightTo = async (startX: number | null, startY: number | null) => {
   if (startX === null || startY === null) {
@@ -183,6 +188,15 @@ export class NutJSOperator extends Operator {
       case 'left_click':
       case 'left_single':
         logger.info('[NutjsOperator] left_click');
+        // Try targeted input first (cursor stays put)
+        if (startX !== null && startY !== null) {
+          const windowInfo = findWindowAtPoint(startX, startY);
+          if (windowInfo) {
+            postMouseClick(windowInfo.pid, startX, startY, 'left');
+            break;
+          }
+        }
+        // Fallback to global nut-js input
         await moveStraightTo(startX, startY);
         await sleep(100);
         await mouse.click(Button.LEFT);
@@ -191,6 +205,17 @@ export class NutJSOperator extends Operator {
       case 'left_double':
       case 'double_click':
         logger.info(`[NutjsOperator] ${action_type}(${startX}, ${startY})`);
+        // Try targeted input first
+        if (startX !== null && startY !== null) {
+          const windowInfo = findWindowAtPoint(startX, startY);
+          if (windowInfo) {
+            postMouseClick(windowInfo.pid, startX, startY, 'left');
+            await sleep(50);
+            postMouseClick(windowInfo.pid, startX, startY, 'left');
+            break;
+          }
+        }
+        // Fallback to global nut-js
         await moveStraightTo(startX, startY);
         await sleep(100);
         await mouse.doubleClick(Button.LEFT);
@@ -199,9 +224,19 @@ export class NutJSOperator extends Operator {
       case 'right_click':
       case 'right_single':
         logger.info('[NutjsOperator] right_click');
+        // Try targeted input first
+        if (startX !== null && startY !== null) {
+          const windowInfo = findWindowAtPoint(startX, startY);
+          if (windowInfo) {
+            postMouseClick(windowInfo.pid, startX, startY, 'right');
+            break;
+          }
+        }
+        // Fallback to global nut-js
         await moveStraightTo(startX, startY);
         await sleep(100);
         await mouse.click(Button.RIGHT);
+        break;
         break;
 
       case 'middle_click':
@@ -239,6 +274,22 @@ export class NutJSOperator extends Operator {
         logger.info('[NutjsOperator] type', content);
         if (content) {
           const stripContent = content.replace(/\\n$/, '').replace(/\n$/, '');
+          
+          // Try targeted input first (cursor stays put)
+          if (startX !== null && startY !== null) {
+            const windowInfo = findWindowAtPoint(startX, startY);
+            if (windowInfo) {
+              postTextInput(windowInfo.pid, stripContent);
+              
+              if (content.endsWith('\n') || content.endsWith('\\n')) {
+                // Send enter key
+                postMouseClick(windowInfo.pid, startX, startY, 'left');
+              }
+              break;
+            }
+          }
+          
+          // Fallback to global nut-js keyboard
           keyboard.config.autoDelayMs = 0;
           if (process.platform === 'win32') {
             const originalClipboard = await clipboard.getContent();
