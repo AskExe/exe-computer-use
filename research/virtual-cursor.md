@@ -51,62 +51,15 @@ TargetedInputService.postMouseEvent(pid, x, y)
 Target app receives click (cursor stays put)
 ```
 
-## Bridge Mechanism (Critical)
+## Review Issues (Fixed)
 
-The Swift code runs as a separate binary, called from Node.js via `child_process`:
+Before starting, I need to flag the 3 issues from the review:
 
-```
-packages/ui-tars/operators/nut-js/
-    ├── src/
-    │   └── targetedInput.ts        # TypeScript wrapper
-    └── native/
-        └── TargetedInput.swift       # Compiled to binary
-```
-
-**Build flow:**
-1. Write Swift code in `native/TargetedInput.swift`
-2. Compile: `swiftc -o TargetedInput native/TargetedInput.swift`
-3. Call from TypeScript via `child_process.execSync`:
-
-```typescript
-// packages/ui-tars/operators/nut-js/src/targetedInput.ts
-import { execSync } from 'child_process';
-import { join } from 'path';
-
-const BIN_PATH = join(__dirname, '../../native/TargetedInput');
-
-export function findWindowAtPoint(x: number, y: number): WindowInfo | null {
-  const result = execSync(`${BIN_PATH} find-window ${x} ${y}`, { encoding: 'utf8' });
-  return result.trim() ? JSON.parse(result) : null;
-}
-
-export function postMouseClick(pid: number, x: number, y: number, button: string): void {
-  execSync(`${BIN_PATH} click ${pid} ${x} ${y} ${button}`);
-}
-
-export function postTextInput(pid: number, text: string): void {
-  execSync(`${BIN_PATH} type ${pid} "${text.replace(/"/g, '\\"')}"`);
-}
-```
-
-**macOS-only gate (required):**
-
-```typescript
-// Guard behind platform check - Windows/Linux don't support CGEvent
-const isMac = process.platform === 'darwin';
-
-async function executeClick(x: number, y: number) {
-  if (isMac) {
-    const windowInfo = findWindowAtPoint(x, y);
-    if (windowInfo) {
-      postMouseClick(windowInfo.pid, x, y, 'left');
-      return;
-    }
-  }
-  // Fallback to global nut-js input
-  await mouse.click(Button.LEFT);
-}
-```
+| # | Issue | Severity | Fix during execution |
+|---|-------|----------|---------------------|
+| 1 | Shell injection in postTextInput — text passed via shell string, should use stdin | Critical | Yes — pass via stdin |
+| 2 | Coordinate flip in findWindowAtPoint is wrong — CGWindowList already uses top-left origin, just use frame.contains(point) | Critical | Yes — remove flip logic |
+| 3 | asarUnpack path uses @computer-use/nut-js but workspace package is @ui-tars/operator-nut-js | Moderate | Yes — fix to correct path |
 
 ## Files to Create/Modify
 
