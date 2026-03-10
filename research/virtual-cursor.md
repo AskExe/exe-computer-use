@@ -137,7 +137,7 @@ asarUnpack:
   - resources/**
   - "node_modules/node-llama-cpp/**"
   - "node_modules/@node-llama-cpp/**"
-  - "node_modules/@computer-use/nut-js/native/**"  # NEW
+  - "node_modules/@ui-tars/operator-nut-js/native/**"  # NEW
 ```
 
 ## Implementation Details
@@ -181,9 +181,10 @@ func parseArgs() -> Command? {
         return .click(pid: pid, x: x, y: y, button: args[5])
         
     case "type":
-        guard args.count >= 4,
+        // Read text from stdin to avoid shell injection
+        guard args.count == 3,
               let pid = Int32(args[2]) else { return nil }
-        let text = args[3..<args.count].joined(separator: " ")
+        let text = readLine() ?? ""
         return .type(pid: pid, text: text)
         
     default:
@@ -193,6 +194,8 @@ func parseArgs() -> Command? {
 
 // CGWindowListCopyWindowInfo returns windows front-to-back
 // First match = topmost window (correct for click target)
+// Note: CGWindowListCopyWindowInfo uses Quartz coordinates (top-left origin, y down)
+// This matches NutJS click coordinates - no coordinate flip needed
 func findWindowAtPoint(x: Int, y: Int) -> WindowInfo? {
     let point = CGPoint(x: CGFloat(x), y: CGFloat(y))
     
@@ -206,17 +209,8 @@ func findWindowAtPoint(x: Int, y: Int) -> WindowInfo? {
             continue
         }
         
-        // CGRect.contains uses bottom-left origin, CGWindowList uses top-left
-        // Convert point to match the coordinate system
-        let screenHeight = NSScreen.main?.frame.height ?? 0
-        let flippedY = screenHeight - point.y
-        
-        let adjustedFrame = CGRect(x: frame.origin.x, 
-                                   y: screenHeight - frame.origin.y - frame.height,
-                                   width: frame.width, 
-                                   height: frame.height)
-        
-        if adjustedFrame.contains(CGPoint(x: point.x, y: flippedY)) {
+        // CGWindowList uses top-left origin (same as NutJS), no flip needed
+        if frame.contains(point) {
             let pid = window[kCGWindowOwnerPID as String] as? Int32 ?? 0
             let name = window[kCGWindowOwnerName as String] as? String ?? ""
             
@@ -332,7 +326,7 @@ const isMac = process.platform === 'darwin';
 // Resolve binary path - works in both dev and packaged app
 function getBinaryPath(): string {
   // In development: ./native/TargetedInput
-  // In package: ../../node_modules/@computer-use/nut-js/native/TargetedInput
+  // In package: ../../node_modules/@ui-tars/operator-nut-js/native/TargetedInput
   const devPath = join(__dirname, '../../native/TargetedInput');
   try {
     require('fs').accessSync(devPath);
@@ -383,9 +377,9 @@ export function postTextInput(pid: number, text: string): void {
   
   try {
     const binPath = getBinaryPath();
-    // Escape quotes for shell
-    const escapedText = text.replace(/"/g, '\\"');
-    execSync(`"${binPath}" type ${pid} "${escapedText}"`, { 
+    // Pass text via stdin to avoid shell injection
+    execSync(`"${binPath}" type ${pid}`, { 
+      input: text,
       timeout: 5000 
     });
   } catch (e) {
