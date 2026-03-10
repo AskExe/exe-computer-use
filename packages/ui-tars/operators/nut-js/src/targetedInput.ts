@@ -63,3 +63,16 @@ export function postTextInput(pid: number, text: string): void {
     console.error('[TargetedInput] type error:', e);
   }
 }
+
+export function postKeyPress(pid: number, keyCode: number): void {
+  if (!isMac) return;
+  
+  try {
+    const binPath = getBinaryPath();
+    execSync(`"${binPath}" key ${pid} ${keyCode}`, { 
+      timeout: 1000 
+    });
+  } catch (e) {
+    console.error('[TargetedInput] key press error:', e);
+  }
+}

@@ -29,7 +29,8 @@ import Big from 'big.js';
 import { 
   findWindowAtPoint, 
   postMouseClick, 
-  postTextInput 
+  postTextInput,
+  postKeyPress 
 } from './targetedInput';
 
 const moveStraightTo = async (startX: number | null, startY: number | null) => {
@@ -236,8 +237,6 @@ export class NutJSOperator extends Operator {
         await moveStraightTo(startX, startY);
         await sleep(100);
         await mouse.click(Button.RIGHT);
-        break;
-        break;
 
       case 'middle_click':
         logger.info('[NutjsOperator] middle_click');
@@ -282,8 +281,8 @@ export class NutJSOperator extends Operator {
               postTextInput(windowInfo.pid, stripContent);
               
               if (content.endsWith('\n') || content.endsWith('\\n')) {
-                // Send enter key
-                postMouseClick(windowInfo.pid, startX, startY, 'left');
+                // Send enter key (CGKeyCode 36 = Return)
+                postKeyPress(windowInfo.pid, 36);
               }
               break;
             }

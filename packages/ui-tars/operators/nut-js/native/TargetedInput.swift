@@ -28,6 +28,7 @@ enum Command {
     case findWindow(x: Int, y: Int)
     case click(pid: Int32, x: Int, y: Int, button: String)
     case type(pid: Int32, text: String)
+    case key(pid: Int32, keyCode: Int)
 }
 
 func parseArgs() -> Command? {
@@ -54,6 +55,12 @@ func parseArgs() -> Command? {
         // Read text from stdin to avoid shell injection (FIX #1)
         let text = readLine() ?? ""
         return .type(pid: pid, text: text)
+        
+    case "key":
+        guard args.count == 4,
+              let pid = Int32(args[2]),
+              let keyCode = Int(args[3]) else { return nil }
+        return .key(pid: pid, keyCode: keyCode)
         
     default:
         return nil
@@ -140,10 +147,26 @@ func postTextInput(pid: pid_t, text: String) {
     }
 }
 
+// Key press via CGEvent
+func postKeyPress(pid: pid_t, keyCode: Int) {
+    let source = CGEventSource(stateID: .hidSystemState)
+    let virtualKey = CGKeyCode(keyCode)
+    
+    // Key down
+    if let downEvent = CGEvent(keyboardEventSource: source, virtualKey: virtualKey, keyDown: true) {
+        downEvent.postToPid(pid)
+    }
+    
+    // Key up
+    if let upEvent = CGEvent(keyboardEventSource: source, virtualKey: virtualKey, keyDown: false) {
+        upEvent.postToPid(pid)
+    }
+}
+
 // Main entry point
 func main() {
     guard let command = parseArgs() else {
-        fputs("Usage: TargetedInput <find-window|click|type> ...\n", stderr)
+        fputs("Usage: TargetedInput <find-window|click|type|key> ...\n", stderr)
         exit(1)
     }
     
@@ -162,6 +185,9 @@ func main() {
         
     case .type(let pid, let text):
         postTextInput(pid: pid, text: text)
+        
+    case .key(let pid, let keyCode):
+        postKeyPress(pid: pid, keyCode: keyCode)
     }
 }
 
