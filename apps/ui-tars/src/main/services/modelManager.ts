@@ -229,13 +229,17 @@ export class ModelManager {
 
       logger.info('[ModelManager] Extracting binary...');
 
-      if (archiveExt === 'tar.gz') {
-        await this.extractTarGz(archivePath);
-      } else {
-        await this.extractZip(archivePath);
+      try {
+        if (archiveExt === 'tar.gz') {
+          await this.extractTarGz(archivePath);
+        } else {
+          await this.extractZip(archivePath);
+        }
+      } finally {
+        if (existsSync(archivePath)) {
+          unlinkSync(archivePath);
+        }
       }
-
-      unlinkSync(archivePath);
 
       this.state.binaryDownloaded = true;
       this.state.binaryDownloading = false;
@@ -456,9 +460,10 @@ export class ModelManager {
     }
   }
 
-  public async startServer(type: ModelType): Promise<void> {
+  public async startServer(type: ModelType, port?: number): Promise<void> {
     const config =
       type === 'main' ? MODEL_CONFIGS.main : MODEL_CONFIGS.reflection;
+    const serverPort = port ?? config.port;
     const modelPath = join(this.modelsDir, config.filename);
     const mmprojPath = join(this.modelsDir, MODEL_CONFIGS.mmproj.filename);
 
@@ -480,6 +485,7 @@ export class ModelManager {
     }
 
     this.state.servers[type].status = 'starting';
+    this.state.servers[type].port = serverPort;
     this.emitStatus();
 
     try {
@@ -491,7 +497,7 @@ export class ModelManager {
         '--host',
         '127.0.0.1',
         '--port',
-        config.port.toString(),
+        serverPort.toString(),
         '--ctx-size',
         '4096',
         '-ngl',
@@ -510,8 +516,6 @@ export class ModelManager {
 
       this.processes.set(type, proc);
       this.state.servers[type].pid = proc.pid;
-      this.state.servers[type].status = 'running';
-      this.emitStatus();
 
       proc.stdout?.on('data', (data: Buffer) => {
         logger.debug(`[llama-server ${type}]`, data.toString());
@@ -538,6 +542,9 @@ export class ModelManager {
       });
 
       await this.waitForServer(config.port);
+
+      this.state.servers[type].status = 'running';
+      this.emitStatus();
 
       logger.info(
         `[ModelManager] ${type} server started on port ${config.port}`,

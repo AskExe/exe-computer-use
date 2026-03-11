@@ -206,17 +206,17 @@ const initializeLocalModels = async (settings: LocalStore) => {
       return;
     }
 
-    const needsMain = state.models.main.downloaded;
-    const needsReflection = state.models.reflection.downloaded;
+    const mainDownloaded = state.models.main.downloaded;
+    const reflectionDownloaded = state.models.reflection.downloaded;
 
-    if (!needsMain && !needsReflection) {
+    if (mainDownloaded && reflectionDownloaded) {
       logger.info('[LocalModels] Both models already downloaded');
     } else {
       logger.info(
         '[LocalModels] Models status - main:',
-        needsMain,
+        mainDownloaded,
         ', reflection:',
-        needsReflection,
+        reflectionDownloaded,
       );
     }
 
@@ -224,7 +224,7 @@ const initializeLocalModels = async (settings: LocalStore) => {
       logger.info('[LocalModels] Auto-start enabled, starting servers...');
 
       try {
-        if (needsMain) {
+        if (mainDownloaded) {
           await modelManager.startServer('main');
           logger.info(
             '[LocalModels] Main server started on port',
@@ -232,7 +232,7 @@ const initializeLocalModels = async (settings: LocalStore) => {
           );
         }
 
-        if (needsReflection) {
+        if (reflectionDownloaded) {
           await modelManager.startServer('reflection');
           logger.info(
             '[LocalModels] Reflection server started on port',
