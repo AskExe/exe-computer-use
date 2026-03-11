@@ -26,11 +26,13 @@ import { getTargetDisplay } from './utils/screen';
 import { UTIOService } from './services/utio';
 import { store } from './store/create';
 import { SettingStore } from './store/setting';
+import { LocalStore } from './store/validate';
 import { createTray } from './tray';
 import { registerSettingsHandlers } from './services/settings';
 import { sanitizeState } from './utils/sanitizeState';
 import { windowManager } from './services/windowManager';
 import { checkBrowserAvailability } from './services/browserCheck';
+import { ModelManager } from './services/modelManager';
 
 const { isProd } = env;
 
@@ -127,10 +129,11 @@ const initializeApp = async () => {
     }
   });
 
-  app.on('before-quit', () => {
+  app.on('before-quit', async () => {
     logger.info('before-quit');
     const windows = BrowserWindow.getAllWindows();
     windows.forEach((window) => window.destroy());
+    await ModelManager.getInstance().cleanup();
   });
 
   app.on('quit', () => {
@@ -163,6 +166,89 @@ const initializeApp = async () => {
     } catch (error) {
       logger.error('Failed to update preset:', error);
     }
+  }
+
+  // Initialize local model manager if enabled
+  await initializeLocalModels(settings);
+};
+
+const initializeLocalModels = async (settings: LocalStore) => {
+  if (!settings.localModelEnabled) {
+    logger.info('[LocalModels] Local models disabled');
+    return;
+  }
+
+  logger.info('[LocalModels] Initializing local model manager...');
+  const modelManager = ModelManager.getInstance();
+
+  try {
+    await modelManager.checkExistingFiles();
+    const state = modelManager.getState();
+
+    logger.info('[LocalModels] State:', {
+      binaryDownloaded: state.binaryDownloaded,
+      mainModel: state.models.main.downloaded,
+      reflectionModel: state.models.reflection.downloaded,
+      mmprojDownloaded: state.models.mmproj.downloaded,
+    });
+
+    if (!state.binaryDownloaded) {
+      logger.warn(
+        '[LocalModels] Binary not downloaded. User needs to download first.',
+      );
+      return;
+    }
+
+    if (!state.models.mmproj.downloaded) {
+      logger.warn(
+        '[LocalModels] mmproj not downloaded. User needs to download first.',
+      );
+      return;
+    }
+
+    const needsMain = state.models.main.downloaded;
+    const needsReflection = state.models.reflection.downloaded;
+
+    if (!needsMain && !needsReflection) {
+      logger.info('[LocalModels] Both models already downloaded');
+    } else {
+      logger.info(
+        '[LocalModels] Models status - main:',
+        needsMain,
+        ', reflection:',
+        needsReflection,
+      );
+    }
+
+    if (settings.localModelAutoStart) {
+      logger.info('[LocalModels] Auto-start enabled, starting servers...');
+
+      try {
+        if (needsMain) {
+          await modelManager.startServer('main');
+          logger.info(
+            '[LocalModels] Main server started on port',
+            settings.localModelMainPort || 11435,
+          );
+        }
+
+        if (needsReflection) {
+          await modelManager.startServer('reflection');
+          logger.info(
+            '[LocalModels] Reflection server started on port',
+            settings.localModelReflectionPort || 11436,
+          );
+        }
+      } catch (error) {
+        logger.error('[LocalModels] Failed to start servers:', error);
+      }
+    } else {
+      logger.info(
+        '[LocalModels] Auto-start disabled, servers not started automatically',
+      );
+    }
+  } catch (error) {
+    logger.error('[LocalModels] Failed to initialize local models:', error);
   }
 };
 

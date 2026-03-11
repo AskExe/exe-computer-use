@@ -6,7 +6,9 @@ import { logger } from '@main/logger';
 
 export { KnowledgeBase } from './knowledgeBase';
 
-function convertToStructuredFact(fact: ElementFact): StructuredFact {
+function convertToStructuredFact(
+  fact: ElementFact,
+): Omit<StructuredFact, 'addedAt' | 'useCount'> {
   const loc = fact.location ? ` at ${fact.location}` : '';
   const sel = fact.selector ? ` [${fact.selector}]` : '';
   const text = `${fact.element || fact.type}: ${fact.description}${loc}${sel}`;

@@ -41,6 +41,12 @@ export const PresetSchema = z.object({
 
   // Display Settings
   targetDisplayId: z.number().optional(),
+
+  // Local Model Settings (llama-server)
+  localModelEnabled: z.boolean().optional(),
+  localModelAutoStart: z.boolean().optional(),
+  localModelMainPort: z.number().min(1024).max(65535).optional(),
+  localModelReflectionPort: z.number().min(1024).max(65535).optional(),
 });
 
 export type PresetSource = z.infer<typeof PresetSourceSchema>;

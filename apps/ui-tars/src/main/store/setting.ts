@@ -34,6 +34,10 @@ export const DEFAULT_SETTING: LocalStore = {
   reflectionBaseUrl: '',
   reflectionModelName: 'ui-tars-7b-dpo',
   targetDisplayId: undefined,
+  localModelEnabled: false,
+  localModelAutoStart: true,
+  localModelMainPort: 11435,
+  localModelReflectionPort: 11436,
 };
 
 export class SettingStore {

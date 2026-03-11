@@ -25,7 +25,7 @@ export const getModelVersion = (
 export const getSpByModelVersion = (
   modelVersion: UITarsModelVersion,
   language: 'zh' | 'en',
-  operatorType: 'browser' | 'computer',
+  _operatorType: 'browser' | 'computer',
 ) => {
   switch (modelVersion) {
     case UITarsModelVersion.V1_5:

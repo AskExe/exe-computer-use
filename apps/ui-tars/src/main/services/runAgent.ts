@@ -26,6 +26,7 @@ import {
 } from '../utils/agent';
 import { RMAOrchestrator, KnowledgeBase } from './rma';
 import { ReflectionService } from './rma/reflectionService';
+import { ModelManager } from './modelManager';
 
 export const runAgent = async (
   setState: (state: AppState) => void,
@@ -111,7 +112,10 @@ export const runAgent = async (
       const lastActionText = predictionParsed?.[0]
         ? JSON.stringify(predictionParsed[0])
         : '';
-      const { isLoop } = await rma.processStep(screenshotBase64, lastActionText);
+      const { isLoop } = await rma.processStep(
+        screenshotBase64,
+        lastActionText,
+      );
       if (isLoop) {
         abortController?.abort();
         setState({
@@ -160,12 +164,26 @@ export const runAgent = async (
   }
 
   const modelVersion = getModelVersion(settings.vlmProvider);
+
+  const modelManager = ModelManager.getInstance();
+  const useLocalModels =
+    settings.localModelEnabled && modelManager.isServerRunning('main');
+
   const modelConfig = {
-    baseURL: settings.vlmBaseUrl,
+    baseURL: useLocalModels
+      ? modelManager.getServerUrl('main')
+      : settings.vlmBaseUrl,
     apiKey: settings.vlmApiKey || 'local',
     model: settings.vlmModelName,
     useResponsesApi: settings.useResponsesApi,
   };
+
+  logger.info(
+    '[runAgent] Using local models:',
+    useLocalModels,
+    'baseURL:',
+    modelConfig.baseURL,
+  );
 
   const systemPrompt = getSpByModelVersion(
     modelVersion,
@@ -179,8 +197,22 @@ export const runAgent = async (
 
   if (rmaEnabled) {
     const kb = new KnowledgeBase();
+
+    const useLocalReflection =
+      settings.localModelEnabled && modelManager.isServerRunning('reflection');
+    const reflectionBaseUrl = useLocalReflection
+      ? modelManager.getServerUrl('reflection')
+      : settings.reflectionBaseUrl || '';
+
+    logger.info(
+      '[runAgent] Using local reflection:',
+      useLocalReflection,
+      'baseUrl:',
+      reflectionBaseUrl,
+    );
+
     const reflectionSvc = new ReflectionService(
-      settings.reflectionBaseUrl || '',
+      reflectionBaseUrl,
       settings.vlmApiKey || '',
       settings.reflectionModelName || 'ui-tars-7b-dpo',
     );

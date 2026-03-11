@@ -9,6 +9,7 @@ import { permissionRoute } from './permission';
 import { agentRoute } from './agent';
 import { browserRoute } from './browser';
 import { settingRoute } from './setting';
+import { modelRoute } from './model';
 const t = initIpc.create();
 
 export const ipcRoutes = t.router({
@@ -18,6 +19,7 @@ export const ipcRoutes = t.router({
   ...agentRoute,
   ...browserRoute,
   ...settingRoute,
+  ...modelRoute,
 });
 export type Router = typeof ipcRoutes;
 

@@ -47,8 +47,6 @@ export class UTIOService {
           osVersion: os.release(),
           screenWidth: width,
           screenHeight: height,
-          displayId: targetDisplay.id,
-          displayLabel: targetDisplay.label,
         };
 
         logger.debug('[UTIO] payload:', payload);
