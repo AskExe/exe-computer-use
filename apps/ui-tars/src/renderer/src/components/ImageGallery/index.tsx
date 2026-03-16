@@ -8,6 +8,7 @@ import { Button } from '@renderer/components/ui/button';
 import { Slider } from '@renderer/components/ui/slider';
 import { type ConversationWithSoM } from '@main/shared/types';
 import { ActionIconMap } from '@renderer/const/actions';
+import { getImageForMessage } from '@renderer/hooks/useScreenshots';
 import ms from 'ms';
 
 import { SnapshotImage } from './image';
@@ -66,11 +67,19 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
               };
             }) || [];
         }
+        // Check the message itself first (from IndexedDB/persisted data),
+        // then fall back to the dedicated IPC image cache
+        let imageData =
+          msg.screenshotBase64 || msg.screenshotBase64WithElementMarker;
+        if (!imageData) {
+          const cached = getImageForMessage(index);
+          imageData = cached?.screenshot || cached?.marked;
+        }
+
         return {
           originalIndex: index,
           message: msg,
-          imageData:
-            msg.screenshotBase64 || msg.screenshotBase64WithElementMarker,
+          imageData,
           actions: actions,
           timing: msg.timing,
         };

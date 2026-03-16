@@ -10,6 +10,16 @@ declare global {
     electron: ElectronHandler;
     platform: NodeJS.Platform;
     zustandBridge: any;
+    screenshotBridge: {
+      subscribe: (
+        callback: (
+          images: Record<
+            number,
+            { screenshot?: string; marked?: string }
+          >,
+        ) => void,
+      ) => () => void;
+    };
   }
 }
 

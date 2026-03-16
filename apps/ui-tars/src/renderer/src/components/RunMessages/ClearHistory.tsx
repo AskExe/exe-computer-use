@@ -17,6 +17,7 @@ import {
 } from '@renderer/components/ui/alert-dialog';
 import { useState } from 'react';
 import { useSession } from '@renderer/hooks/useSession';
+import { clearImageCache } from '@renderer/hooks/useScreenshots';
 
 export const ClearHistory = () => {
   const [open, setOpen] = useState(false);
@@ -28,6 +29,7 @@ export const ClearHistory = () => {
 
   const handleClearMessages = async () => {
     await deleteMessages(currentSessionId);
+    clearImageCache();
     setOpen(false);
   };
 

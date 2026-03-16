@@ -288,6 +288,49 @@ const registerIPCHandlers = (
     ipcMain.emit('subscribe', state),
   );
 
+  // Track which message images have already been sent via dedicated channel
+  let lastBroadcastedCount = 0;
+
+  const imageUnsubscribe = store.subscribe((state: unknown) => {
+    const appState = state as Record<string, unknown>;
+    const messages = appState.messages as
+      | Array<Record<string, unknown>>
+      | undefined;
+    if (!messages) return;
+
+    // Reset counter when messages are cleared (new agent run)
+    if (messages.length < lastBroadcastedCount) {
+      lastBroadcastedCount = 0;
+    }
+
+    if (messages.length <= lastBroadcastedCount) return;
+
+    // Only send images from new messages
+    const newMessages = messages.slice(lastBroadcastedCount);
+    const imagePayload: Record<
+      number,
+      { screenshot?: string; marked?: string }
+    > = {};
+
+    newMessages.forEach((msg, i) => {
+      const globalIdx = lastBroadcastedCount + i;
+      const images: { screenshot?: string; marked?: string } = {};
+      if (msg.screenshotBase64)
+        images.screenshot = msg.screenshotBase64 as string;
+      if (msg.screenshotBase64WithElementMarker)
+        images.marked = msg.screenshotBase64WithElementMarker as string;
+      if (images.screenshot || images.marked) {
+        imagePayload[globalIdx] = images;
+      }
+    });
+
+    lastBroadcastedCount = messages.length;
+
+    if (Object.keys(imagePayload).length > 0) {
+      windowManager.broadcast('screenshots', imagePayload);
+    }
+  });
+
   // TODO: move to ipc routes
   ipcMain.handle('utio:shareReport', async (_, params) => {
     await UTIOService.getInstance().shareReport(params);
@@ -297,7 +340,12 @@ const registerIPCHandlers = (
   // register ipc services routes
   registerIpcMain(ipcRoutes);
 
-  return { unsubscribe };
+  return {
+    unsubscribe: () => {
+      unsubscribe();
+      imageUnsubscribe();
+    },
+  };
 };
 
 /**

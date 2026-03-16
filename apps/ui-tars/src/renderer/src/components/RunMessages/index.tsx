@@ -19,6 +19,7 @@ import { ShareOptions } from '@/renderer/src/components/RunMessages/ShareOptions
 import { ClearHistory } from '@/renderer/src/components/RunMessages/ClearHistory';
 import { useStore } from '@renderer/hooks/useStore';
 import { useSession } from '@renderer/hooks/useSession';
+import { getImageForMessage } from '@renderer/hooks/useScreenshots';
 
 import ImageGallery from '../ImageGallery';
 import {
@@ -55,7 +56,21 @@ const RunMessages = () => {
       );
       const allMessages = [...chatMessages, ...newMessages];
 
-      updateMessages(currentSessionId, allMessages);
+      // Merge images from the dedicated IPC cache back into messages
+      // before persisting to IndexedDB
+      const enrichedMessages = allMessages.map((msg, idx) => {
+        const images = getImageForMessage(idx);
+        if (!images) return msg;
+        return {
+          ...msg,
+          ...(images.screenshot ? { screenshotBase64: images.screenshot } : {}),
+          ...(images.marked
+            ? { screenshotBase64WithElementMarker: images.marked }
+            : {}),
+        };
+      });
+
+      updateMessages(currentSessionId, enrichedMessages);
     }
   }, [currentSessionId, chatMessages.length, messages.length]);
 

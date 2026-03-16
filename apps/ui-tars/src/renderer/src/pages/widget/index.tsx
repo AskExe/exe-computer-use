@@ -19,6 +19,7 @@ import logo from '@resources/logo-full.png?url';
 import { Button } from '@renderer/components/ui/button';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@renderer/api';
+import { clearImageCache } from '@renderer/hooks/useScreenshots';
 
 import './widget.css';
 import { StatusEnum } from '@ui-tars/sdk';
@@ -78,7 +79,12 @@ const Widget = () => {
     }
 
     if (lastMessage.from === 'human') {
-      if (!lastMessage.screenshotBase64) {
+      // Images are now stripped from state broadcasts; check the
+      // lightweight _hasScreenshot flag instead of the base64 data.
+      const hasScreenshot =
+        lastMessage.screenshotBase64 ||
+        (lastMessage as unknown as Record<string, unknown>)._hasScreenshot;
+      if (!hasScreenshot) {
         setActions([
           {
             action: '',
@@ -141,6 +147,7 @@ const Widget = () => {
   const handleStop = useCallback(async () => {
     await api.stopRun();
     await api.clearHistory();
+    clearImageCache();
   }, []);
 
   return (

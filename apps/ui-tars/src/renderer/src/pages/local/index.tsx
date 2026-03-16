@@ -29,6 +29,10 @@ import ThoughtChain from '../../components/ThoughtChain';
 import { api } from '../../api';
 import ImageGallery from '../../components/ImageGallery';
 import { PredictionParsed, StatusEnum } from '@ui-tars/shared/types';
+import {
+  getImageForMessage,
+  clearImageCache,
+} from '@renderer/hooks/useScreenshots';
 import { RouterState } from '../../typings';
 import ChatInput from '../../components/ChatInput';
 import { NavDialog } from '../../components/AlertDialog/navDialog';
@@ -107,7 +111,21 @@ const LocalOperator = () => {
       );
       const allMessages = [...chatMessages, ...newMessages];
 
-      updateMessages(state.sessionId, allMessages);
+      // Merge images from the dedicated IPC cache back into messages
+      // before persisting to IndexedDB
+      const enrichedMessages = allMessages.map((msg, idx) => {
+        const images = getImageForMessage(idx);
+        if (!images) return msg;
+        return {
+          ...msg,
+          ...(images.screenshot ? { screenshotBase64: images.screenshot } : {}),
+          ...(images.marked
+            ? { screenshotBase64WithElementMarker: images.marked }
+            : {}),
+        };
+      });
+
+      updateMessages(state.sessionId, enrichedMessages);
     }
   }, [
     initId,
@@ -176,6 +194,7 @@ const LocalOperator = () => {
   const onConfirm = useCallback(async () => {
     await api.stopRun();
     await api.clearHistory();
+    clearImageCache();
 
     if (pendingAction === 'newChat') {
       await onNewChat();

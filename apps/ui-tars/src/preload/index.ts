@@ -68,9 +68,26 @@ const zustandBridge = {
   },
 };
 
+// Screenshot bridge for dedicated image delivery channel
+const screenshotBridge = {
+  subscribe: (
+    callback: (
+      images: Record<number, { screenshot?: string; marked?: string }>,
+    ) => void,
+  ) => {
+    const subscription = (
+      _: unknown,
+      images: Record<number, { screenshot?: string; marked?: string }>,
+    ) => callback(images);
+    ipcRenderer.on('screenshots', subscription);
+    return () => ipcRenderer.off('screenshots', subscription);
+  },
+};
+
 // Expose both electron and zutron handlers
 contextBridge.exposeInMainWorld('electron', electronHandler);
 contextBridge.exposeInMainWorld('zustandBridge', zustandBridge);
+contextBridge.exposeInMainWorld('screenshotBridge', screenshotBridge);
 contextBridge.exposeInMainWorld('platform', process.platform);
 
 export type ElectronHandler = typeof electronHandler;
