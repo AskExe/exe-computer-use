@@ -102,6 +102,9 @@ const initializeApp = async () => {
 
   let mainWindow = initialWindow;
 
+  // Wire model manager progress/status events to the renderer
+  ModelManager.getInstance().setWebContents(mainWindow.webContents);
+
   UTIOService.getInstance().appLaunched().catch((e) =>
     logger.error('[startup] UTIO launch failed:', e),
   );
@@ -147,6 +150,7 @@ const initializeApp = async () => {
     logger.info('app activate');
     if (!mainWindow || mainWindow.isDestroyed()) {
       mainWindow = createMainWindow();
+      ModelManager.getInstance().setWebContents(mainWindow.webContents);
     } else {
       if (!mainWindow.isVisible()) {
         mainWindow.show();

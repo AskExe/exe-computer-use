@@ -34,6 +34,7 @@ export class ModelManager {
   private processes: Map<ModelType, ChildProcess> = new Map();
   private progressCallbacks: Set<ProgressCallback> = new Set();
   private statusCallbacks: Set<StatusCallback> = new Set();
+  private webContents: Electron.WebContents | null = null;
 
   private constructor() {
     this.modelsDir = join(app.getPath('userData'), 'models');
@@ -117,12 +118,18 @@ export class ModelManager {
     return () => this.statusCallbacks.delete(callback);
   }
 
+  public setWebContents(wc: Electron.WebContents): void {
+    this.webContents = wc;
+  }
+
   private emitProgress(progress: DownloadProgress): void {
     this.progressCallbacks.forEach((cb) => cb(progress));
+    this.webContents?.send('model:progress', progress);
   }
 
   private emitStatus(): void {
     this.statusCallbacks.forEach((cb) => cb(this.state));
+    this.webContents?.send('model:status', this.state);
   }
 
   public getState(): ModelManagerState {
@@ -447,17 +454,22 @@ export class ModelManager {
       await this.downloadBinary();
     }
 
+    // Download models in parallel — they are independent files from different URLs
+    const parallelDownloads: Promise<void>[] = [];
+
     if (!this.state.models.mmproj.downloaded) {
-      await this.downloadMmproj();
+      parallelDownloads.push(this.downloadMmproj());
     }
 
     if (!this.state.models.main.downloaded) {
-      await this.downloadModel('main');
+      parallelDownloads.push(this.downloadModel('main'));
     }
 
     if (!this.state.models.reflection.downloaded) {
-      await this.downloadModel('reflection');
+      parallelDownloads.push(this.downloadModel('reflection'));
     }
+
+    await Promise.all(parallelDownloads);
   }
 
   public async startServer(type: ModelType, port?: number): Promise<void> {
@@ -616,9 +628,7 @@ export class ModelManager {
   }
 
   public getServerUrl(type: ModelType): string {
-    const config =
-      type === 'main' ? MODEL_CONFIGS.main : MODEL_CONFIGS.reflection;
-    return `http://127.0.0.1:${config.port}/v1`;
+    return `http://127.0.0.1:${this.state.servers[type].port}/v1`;
   }
 
   public isServerRunning(type: ModelType): boolean {
