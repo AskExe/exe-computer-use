@@ -355,7 +355,7 @@ const registerIPCHandlers = (
 app
   .whenReady()
   .then(async () => {
-    electronApp.setAppUserModelId('com.electron');
+    electronApp.setAppUserModelId('com.exeai.computer-use');
 
     // Default open or close DevTools by F12 in development
     // and ignore CommandOrControl + R in production.

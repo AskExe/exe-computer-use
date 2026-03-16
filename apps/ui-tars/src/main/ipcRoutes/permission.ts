@@ -4,6 +4,7 @@
  */
 import { initIpc } from '@ui-tars/electron-ipc/main';
 import * as env from '@main/env';
+import { logger } from '@main/logger';
 import { store } from '@main/store/create';
 const t = initIpc.create();
 
@@ -19,7 +20,7 @@ export const permissionRoute = t.router({
         ensurePermissions: { screenCapture: true, accessibility: true },
       });
     }
-    console.log(
+    logger.info(
       '[getEnsurePermissions] ensurePermissions',
       store.getState().ensurePermissions,
     );

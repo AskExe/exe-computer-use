@@ -9,7 +9,6 @@ import { useForm } from 'react-hook-form';
 import { useSetting } from '@renderer/hooks/useSetting';
 import {
   Form,
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
