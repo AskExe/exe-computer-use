@@ -2,4 +2,4 @@
 
 Operator Browserbase SDK for UI-TARS.
 
-See [example](https://github.com/bytedance/UI-TARS-desktop/tree/main/operator-browserbase) for usage.
+See [example](https://github.com/AskExe/exe-computer-use/tree/main/operator-browserbase) for usage.

@@ -18,7 +18,7 @@ async function main() {
     // First search, keep browser open
     logger.info('Performing first search');
     const results1 = await browserSearch.perform({
-      query: 'ui-tars',
+      query: 'exe-computer-use',
       count: 3,
       keepBrowserOpen: true, // Keep browser open
     });

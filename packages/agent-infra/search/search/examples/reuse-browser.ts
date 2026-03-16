@@ -23,7 +23,7 @@ async function main() {
   logger.info('Performing first search...');
   const firstResults = await client.search(
     {
-      query: 'UI-TARS',
+      query: 'exe-computer-use',
       count: 5,
     },
     {

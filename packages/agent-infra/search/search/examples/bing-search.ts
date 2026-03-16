@@ -16,7 +16,7 @@ export async function bingSearch() {
 
   const results = await client.search(
     {
-      query: 'UI-TARS',
+      query: 'exe-computer-use',
       count: 5,
     },
     {

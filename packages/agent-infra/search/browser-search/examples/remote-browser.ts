@@ -13,7 +13,7 @@ async function browserSearch() {
   });
 
   const results = await browserSearch.perform({
-    query: 'ui-tars',
+    query: 'exe-computer-use',
     count: 3,
   });
 

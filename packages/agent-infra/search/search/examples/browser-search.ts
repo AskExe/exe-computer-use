@@ -14,7 +14,7 @@ export async function browserSearch() {
 
   const results = await client.search(
     {
-      query: 'UI-TARS',
+      query: 'exe-computer-use',
       count: 10,
     },
     {

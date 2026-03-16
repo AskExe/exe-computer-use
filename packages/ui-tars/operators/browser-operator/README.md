@@ -1,6 +1,6 @@
 # Browser Operator for UI-TARS
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/bytedance/UI-TARS-desktop/LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/AskExe/exe-computer-use/LICENSE)
 
 A browser automation operator for UI-TARS that enables controlling web browsers through natural language instructions.
 
@@ -15,7 +15,7 @@ A browser automation operator for UI-TARS that enables controlling web browsers 
   - Keyboard shortcuts
 - Visual feedback for actions in the browser
 - Highlight clickable elements before taking screenshots
-- Integration with [UI-TARS SDK](https://github.com/bytedance/UI-TARS-desktop/blob/main/docs/sdk.md)
+- Integration with [UI-TARS SDK](https://github.com/AskExe/exe-computer-use/blob/main/docs/sdk.md)
 
 ## Installation
 
