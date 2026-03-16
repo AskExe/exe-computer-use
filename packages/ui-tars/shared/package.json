@@ -1,13 +1,13 @@
 {
   "name": "@ui-tars/shared",
   "version": "1.2.3",
-  "description": "Shared types for UI-TARS",
+  "description": "Shared types for Exe Computer Use",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bytedance/UI-TARS-desktop"
+    "url": "https://github.com/AskExe/exe-computer-use"
   },
   "bugs": {
-    "url": "https://github.com/bytedance/UI-TARS-desktop/issues"
+    "url": "https://github.com/AskExe/exe-computer-use/issues"
   },
   "exports": {
     "./types": {
@@ -40,7 +40,7 @@
     "build:watch": "rslib build --watch"
   },
   "keywords": [
-    "UI-TARS"
+    "Exe Computer Use"
   ],
   "license": "Apache-2.0",
   "publishConfig": {

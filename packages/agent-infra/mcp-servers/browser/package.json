@@ -1,15 +1,15 @@
 {
   "name": "@agent-infra/mcp-server-browser",
   "version": "1.2.29",
-  "mcpName": "io.github.bytedance/mcp-server-browser",
+  "mcpName": "io.github.AskExe/mcp-server-browser",
   "description": "MCP server for browser use access",
   "license": "MIT",
-  "homepage": "https://github.com/bytedance/UI-TARS-desktop",
-  "bugs": "https://github.com/bytedance/UI-TARS-desktop/issues",
+  "homepage": "https://github.com/AskExe/exe-computer-use",
+  "bugs": "https://github.com/AskExe/exe-computer-use/issues",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bytedance/UI-TARS-desktop.git",
+    "url": "https://github.com/AskExe/exe-computer-use.git",
     "directory": "packages/agent-infra/mcp-servers/browser"
   },
   "bin": {
