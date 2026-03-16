@@ -221,33 +221,28 @@ const LocalOperator = () => {
           )}
 
           {chatMessages?.map((message, idx) => {
+            const key = message.timing?.start
+              ? `msg-${message.from}-${message.timing.start}`
+              : `msg-${idx}`;
+
             if (message?.from === 'human') {
               if (message?.value === IMAGE_PLACEHOLDER) {
-                // screen shot
                 return (
                   <ScreenshotMessage
-                    key={`message-${idx}`}
+                    key={key}
                     onClick={() => handleImageSelect(idx)}
                   />
                 );
               }
-
-              return (
-                <HumanTextMessage
-                  key={`message-${idx}`}
-                  text={message?.value}
-                />
-              );
+              return <HumanTextMessage key={key} text={message?.value} />;
             }
 
             const { predictionParsed, screenshotBase64WithElementMarker } =
               message;
-
-            // Find the finished step (VL 1.5 Model)
             const finishedStep = getFinishedContent(predictionParsed);
 
             return (
-              <div key={idx}>
+              <div key={key}>
                 {predictionParsed?.length ? (
                   <ThoughtChain
                     steps={predictionParsed}
@@ -255,7 +250,6 @@ const LocalOperator = () => {
                     onClick={() => handleImageSelect(idx)}
                   />
                 ) : null}
-
                 {!!finishedStep && <AssistantTextMessage text={finishedStep} />}
               </div>
             );

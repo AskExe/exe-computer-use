@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Bytedance, Inc. and its affiliates.
  * SPDX-License-Identifier: Apache-2.0
  */
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MousePointerClick, SkipBack, SkipForward } from 'lucide-react';
 import { Button } from '@renderer/components/ui/button';
 import { Slider } from '@renderer/components/ui/slider';
@@ -78,6 +78,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
       .filter((entry) => entry.imageData);
   }, [messages]);
 
+  const prevLengthRef = useRef(0);
+
   useEffect(() => {
     if (typeof selectImgIndex === 'number') {
       const targetIndex = imageEntries.findIndex(
@@ -87,12 +89,15 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
         setCurrentIndex(targetIndex);
       }
     }
-    // console.log('selectImgIndex', selectImgIndex);
   }, [selectImgIndex, imageEntries]);
 
   useEffect(() => {
-    setCurrentIndex(imageEntries.length - 1);
-  }, [imageEntries]);
+    // Only auto-advance when new images are added
+    if (imageEntries.length > prevLengthRef.current) {
+      setCurrentIndex(imageEntries.length - 1);
+    }
+    prevLengthRef.current = imageEntries.length;
+  }, [imageEntries.length]);
 
   const handleSliderChange = (value: number[]) => {
     setCurrentIndex(value[0]);

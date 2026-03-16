@@ -44,7 +44,8 @@ export const runAgent = async (
   const handleData: GUIAgentConfig<NutJSElectronOperator>['onData'] = async ({
     data,
   }) => {
-    const lastConv = getState().messages[getState().messages.length - 1];
+    const currentState = getState();
+    const lastConv = currentState.messages[currentState.messages.length - 1];
     const { status, conversations, ...restUserData } = data;
     logger.info('[onGUIAgentData] status', status, conversations.length);
 
@@ -101,30 +102,34 @@ export const runAgent = async (
       showPredictionMarker(predictionParsed, screenshotContext);
     }
 
+    const prevState = getState();
     setState({
-      ...getState(),
+      ...prevState,
       status,
       restUserData,
-      messages: [...(getState().messages || []), ...conversationsWithSoM],
+      messages: prevState.messages
+        ? prevState.messages.concat(conversationsWithSoM)
+        : conversationsWithSoM,
     });
 
     if (rmaEnabled && rma && screenshotBase64) {
       const lastActionText = predictionParsed?.[0]
         ? JSON.stringify(predictionParsed[0])
         : '';
-      const { isLoop } = await rma.processStep(
-        screenshotBase64,
-        lastActionText,
-      );
-      if (isLoop) {
-        abortController?.abort();
-        setState({
-          ...getState(),
-          status: StatusEnum.ERROR,
-          errorMsg: rma.loopWarning ?? 'Loop detected',
-        });
-        return;
-      }
+      rma
+        .processStep(screenshotBase64, lastActionText)
+        .then(({ isLoop }) => {
+          if (isLoop) {
+            abortController?.abort();
+            const prev = getState();
+            setState({
+              ...prev,
+              status: StatusEnum.ERROR,
+              errorMsg: rma?.loopWarning ?? 'Loop detected',
+            });
+          }
+        })
+        .catch((e) => logger.error('[RMA processStep error]:', e));
     }
   };
 
@@ -140,8 +145,9 @@ export const runAgent = async (
       await checkBrowserAvailability();
       const { browserAvailable } = getState();
       if (!browserAvailable) {
+        const prevState = getState();
         setState({
-          ...getState(),
+          ...prevState,
           status: StatusEnum.ERROR,
           errorMsg:
             'Browser is not available. Please install Chrome and try again.',
@@ -231,8 +237,9 @@ export const runAgent = async (
     onError: (params) => {
       const { error } = params;
       logger.error('[onGUIAgentError]', settings, error);
+      const prevState = getState();
       setState({
-        ...getState(),
+        ...prevState,
         status: StatusEnum.ERROR,
         errorMsg: JSON.stringify({
           status: error?.status,
@@ -268,8 +275,9 @@ export const runAgent = async (
 
   await guiAgent.run(instructions, sessionHistoryMessages).catch((e) => {
     logger.error('[runAgentLoop error]', e);
+    const prevState = getState();
     setState({
-      ...getState(),
+      ...prevState,
       status: StatusEnum.ERROR,
       errorMsg: e.message,
     });

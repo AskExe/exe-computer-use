@@ -48,7 +48,6 @@ type UseBoundStore<S extends ReadonlyStoreApi<unknown>> = {
 const createUseStore = <S extends AppState>(
   bridge: Handlers<S>,
 ): UseBoundStore<StoreApi<S>> => {
-  console.log('bridge', bridge);
   const vanillaStore = createStore<S>(bridge);
   const useBoundStore = (selector: (state: S) => unknown) =>
     useZustandStore(vanillaStore, selector);

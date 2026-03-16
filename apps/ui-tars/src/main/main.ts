@@ -88,21 +88,23 @@ const initializeApp = async () => {
     logger.info('ensureScreenCapturePermission', ensureScreenCapturePermission);
   }
 
-  await checkBrowserAvailability();
+  // Run independent initialization tasks in parallel
+  const [, , , initialWindow] = await Promise.all([
+    checkBrowserAvailability().catch((e) =>
+      logger.error('[startup] browser check failed:', e),
+    ),
+    loadDevDebugTools().catch((e) =>
+      logger.error('[startup] dev tools failed:', e),
+    ),
+    createTray().catch((e) => logger.error('[startup] tray failed:', e)),
+    Promise.resolve(createMainWindow()),
+  ]);
 
-  // if (env.isDev) {
-  await loadDevDebugTools();
-  // }
+  let mainWindow = initialWindow;
 
-  logger.info('createTray');
-  // Tray
-  await createTray();
-
-  // Send app launched event
-  await UTIOService.getInstance().appLaunched();
-
-  logger.info('createMainWindow');
-  let mainWindow = createMainWindow();
+  UTIOService.getInstance().appLaunched().catch((e) =>
+    logger.error('[startup] UTIO launch failed:', e),
+  );
 
   session.defaultSession.setDisplayMediaRequestHandler(
     (_request, callback) => {
@@ -169,7 +171,9 @@ const initializeApp = async () => {
   }
 
   // Initialize local model manager if enabled
-  await initializeLocalModels(settings);
+  initializeLocalModels(settings).catch((e) =>
+    logger.error('[startup] local models init failed:', e),
+  );
 };
 
 const initializeLocalModels = async (settings: LocalStore) => {
@@ -296,14 +300,6 @@ const registerIPCHandlers = (
  * Add event listeners...
  */
 
-app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
 app
   .whenReady()
   .then(async () => {
@@ -321,4 +317,4 @@ app
     logger.info('app.whenReady end');
   })
 
-  .catch(console.log);
+  .catch((e) => logger.error('[app.whenReady error]', e));
