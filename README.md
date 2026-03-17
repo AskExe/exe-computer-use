@@ -5,6 +5,8 @@ The only fully local, detection-resistant computer agent that actually works.
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![GitHub repo](https://img.shields.io/badge/GitHub-AskExe%2Fexe--computer--use-181717?logo=github)](https://github.com/AskExe/exe-computer-use)
 
+> **Part of [Exe OS](https://github.com/AskExe/exe-os)** -- the AI Employee Operating System. Exe Computer Use is the first production module: a specialist agent that sees, understands, and operates any GUI on your machine. It validates the core Exe OS primitives -- memory segregation, model abstraction, operator routing, and self-correction -- in a single-domain implementation before they generalize into the full multi-agent OS.
+
 ---
 
 ## Why Exe
@@ -187,6 +189,36 @@ exe-computer-use/
 | [Architecture](./docs/architecture.md) | System design with Mermaid diagrams |
 | [Configuration](./docs/configuration.md) | All settings and environment variables |
 | [Contributing](./CONTRIBUTING.md) | Dev setup, testing, adding operators |
+
+---
+
+## Part of Exe OS
+
+Exe Computer Use is the first module of **Exe OS** -- an AI Employee Operating System that orchestrates hierarchical multi-agent systems the way Linux orchestrates processes.
+
+```
+Exe OS (the kernel)
+├── State persistence & recovery      ← agent execution checkpointing
+├── Memory segregation                ← vector DB per agent, scoped context
+├── Model routing & compute limits    ← abstracts LLMs, manages token budgets
+├── Sandboxing & security             ← isolated execution environments
+└── Observability & audit logs        ← full reasoning chain logging
+
+Exe Computer Use (first module)
+├── Operator abstraction              ← Desktop, Browser, Android (pluggable)
+├── Model-agnostic agent loop         ← works with any VLM, local or cloud
+├── Reflection Memory Agent           ← self-correcting loop detection + KB
+├── IPC memory architecture           ← efficient state/image separation
+└── Native kernel input               ← detection-resistant execution
+```
+
+What this module proves for Exe OS:
+- **Memory segregation works** -- RMA knowledge base is separate from operational state, persists across runs
+- **Model abstraction works** -- same agent loop runs on local llama-server or remote OpenAI with zero code changes
+- **Operator routing works** -- 4 pluggable operators, same GUIAgent core, new platforms = new subclass
+- **Self-correction works** -- dHash loop detection + reflection model = agents that learn from mistakes
+
+The patterns validated here -- operator interfaces, model abstraction, memory layering, self-correction -- become the foundation for every specialist agent in the full Exe OS.
 
 ---
 
