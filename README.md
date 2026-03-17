@@ -5,7 +5,7 @@ The only fully local, detection-resistant computer agent that actually works.
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![GitHub repo](https://img.shields.io/badge/GitHub-AskExe%2Fexe--computer--use-181717?logo=github)](https://github.com/AskExe/exe-computer-use)
 
-> **Part of [Exe OS](https://github.com/AskExe/exe-os)** -- the AI Employee Operating System. Exe Computer Use is the first production module: a specialist agent that sees, understands, and operates any GUI on your machine. It validates the core Exe OS primitives -- memory segregation, model abstraction, operator routing, and self-correction -- in a single-domain implementation before they generalize into the full multi-agent OS.
+> **Part of [Exe OS](https://github.com/AskExe/exe-os)** -- the AI Employee Operating System. Exe Computer Use is a tool that any AI employee in Exe OS can call to operate a GUI. When the CTO agent needs to configure cloud infrastructure, the CMO agent needs to manage design tools, or any specialist agent needs to interact with a screen -- they delegate to Exe Computer Use. It's the hands and eyes of the organization.
 
 ---
 
@@ -194,31 +194,28 @@ exe-computer-use/
 
 ## Part of Exe OS
 
-Exe Computer Use is the first module of **Exe OS** -- an AI Employee Operating System that orchestrates hierarchical multi-agent systems the way Linux orchestrates processes.
+**[Exe OS](https://github.com/AskExe/exe-os)** is an AI Employee Operating System -- infrastructure for orchestrating hierarchical multi-agent systems the way Linux orchestrates processes. Exe Computer Use is a **tool in that system**, not the system itself.
 
 ```
-Exe OS (the kernel)
-├── State persistence & recovery      ← agent execution checkpointing
-├── Memory segregation                ← vector DB per agent, scoped context
-├── Model routing & compute limits    ← abstracts LLMs, manages token budgets
-├── Sandboxing & security             ← isolated execution environments
-└── Observability & audit logs        ← full reasoning chain logging
-
-Exe Computer Use (first module)
-├── Operator abstraction              ← Desktop, Browser, Android (pluggable)
-├── Model-agnostic agent loop         ← works with any VLM, local or cloud
-├── Reflection Memory Agent           ← self-correcting loop detection + KB
-├── IPC memory architecture           ← efficient state/image separation
-└── Native kernel input               ← detection-resistant execution
+Exe OS (the operating system)
+├── Exe (COO/Orchestrator)           ← parses goals, routes tasks, reviews work
+├── Specialist Agents                ← CTO, CMO, etc. with domain expertise
+│   ├── Scoped memory & tools        ← each agent has its own context
+│   └── SOPs & quality metrics       ← domain-specific workflows
+└── Shared Tools                     ← capabilities any agent can invoke
+    ├── Exe Computer Use             ← operate any GUI on the machine
+    ├── Code execution               ← run scripts in sandboxed environments
+    ├── Browser automation           ← web research and interaction
+    └── ...                          ← extensible tool registry
 ```
 
-What this module proves for Exe OS:
-- **Memory segregation works** -- RMA knowledge base is separate from operational state, persists across runs
-- **Model abstraction works** -- same agent loop runs on local llama-server or remote OpenAI with zero code changes
-- **Operator routing works** -- 4 pluggable operators, same GUIAgent core, new platforms = new subclass
-- **Self-correction works** -- dHash loop detection + reflection model = agents that learn from mistakes
+When any AI employee in Exe OS needs to interact with a desktop application -- clicking through a UI, filling out forms, navigating software that has no API -- it calls Exe Computer Use. The CTO agent uses it to configure infrastructure dashboards. The CMO agent uses it to operate design tools. It's the hands and eyes of the organization.
 
-The patterns validated here -- operator interfaces, model abstraction, memory layering, self-correction -- become the foundation for every specialist agent in the full Exe OS.
+What Exe Computer Use contributes back to the OS:
+- **Operator routing** -- pluggable operator interface that generalizes to any tool
+- **Model abstraction** -- same code on local llama-server or cloud API, zero changes
+- **Self-correction** -- RMA loop detection + reflection = agents that learn from mistakes
+- **Memory segregation** -- knowledge base separate from operational state, persists across runs
 
 ---
 
