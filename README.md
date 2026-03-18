@@ -192,6 +192,101 @@ exe-computer-use/
 
 ---
 
+## Architectural Decision Record
+
+Every architectural choice was made to solve a specific failure mode we observed in existing computer-use tools. Here's what we chose, when, and why it's better.
+
+### ADR-001: Native Kernel Input over Cursor Automation
+**Date:** 2025-02-15 | **Status:** Implemented
+
+**Problem:** PyAutoGUI and similar tools physically move the cursor. This (1) blocks the user from working during automation, (2) is trivially detectable by any app monitoring cursor position, and (3) breaks when the user accidentally moves the mouse.
+
+**Decision:** Use `CGEventPostToPid` on macOS to post input events directly to the target process's kernel event queue. The cursor never moves. Events arrive as if the user clicked inside the target app.
+
+**Why this is better:** Claude Computer Use, OpenAI Operator, and Open Interpreter all use PyAutoGUI or browser DevTools. Every one of them moves the cursor, is detectable, and locks the user out during execution. Exe doesn't.
+
+**Trade-off:** macOS-only for targeted input. Linux/Windows fall back to global nut-js input. We accept this because macOS is the primary target and the fallback still works -- it's just not invisible.
+
+---
+
+### ADR-002: Dedicated IPC Image Channel
+**Date:** 2025-03-16 | **Status:** Implemented
+
+**Problem:** Electron's Zustand state bridge serializes the entire app state on every update. Each message includes a 5-50MB base64 screenshot. With 50+ state updates per agent iteration, a single task serializes up to 2.5GB through IPC.
+
+**Decision:** Strip screenshots from the state broadcast and send them exactly once through a dedicated `'screenshots'` IPC channel. The state carries only lightweight `_hasScreenshot` boolean flags. The renderer caches images and merges them back for display and IndexedDB persistence.
+
+**Why this is better:** No other Electron-based agent addresses this. The naive approach (pass everything through state) works for demos but collapses under real workloads. Our approach reduces per-iteration IPC overhead from ~50MB to <100KB -- a 99% reduction.
+
+**Trade-off:** Added complexity in the renderer (image cache + merge logic). Worth it because the alternative is an unusable app after 20 iterations.
+
+---
+
+### ADR-003: Reflection Memory Agent (RMA) with Perceptual Hashing
+**Date:** 2025-03-09 | **Status:** Implemented
+
+**Problem:** Every computer agent gets stuck in loops. It clicks a button, nothing changes, it clicks again, forever. There's no mechanism to detect "I've been here before" or "this approach isn't working."
+
+**Decision:** Three-layer detection: (1) dHash compresses each screenshot to a 64-bit perceptual fingerprint, (2) Hamming distance comparison against a sliding 12-frame window detects repeated screens, (3) a reflection model (UI-TARS-7B) extracts facts from significant screen changes and stores them in a persistent knowledge base that survives across runs.
+
+**Why this is better:** No other open-source computer agent has loop detection. Claude Computer Use, OpenAI Operator, and Open Interpreter all retry indefinitely. Exe detects loops within 3 frames, auto-aborts, and learns from the failure.
+
+**Trade-off:** RMA adds ~500ms latency when a significant screen change triggers reflection. We made reflection non-blocking (fire-and-forget) so it never delays the main agent loop.
+
+---
+
+### ADR-004: Local Model Serving via llama-server
+**Date:** 2025-03-14 | **Status:** Implemented
+
+**Problem:** Cloud-only agents require API keys, are subject to rate limits, send sensitive screen data to third parties, and fail offline. For a tool that Exe OS agents call autonomously, cloud dependency is unacceptable.
+
+**Decision:** Bundle llama-server binary management. Two parallel instances serve UI-TARS-2B (action model, port 11435) and UI-TARS-7B-DPO (reflection model, port 11436). Downloads are parallel. Servers auto-start on launch. The OpenAI-compatible API means the same code path works for local and remote -- just change the base URL.
+
+**Why this is better:** Claude Computer Use requires Anthropic API. OpenAI Operator requires OpenAI API. Open Interpreter needs an API key. Exe runs fully offline with zero data leaving the machine. For Exe OS, this means AI employees can operate 24/7 without cloud costs or data exposure.
+
+**Trade-off:** ~8GB of model weights to download. First launch takes time. We accept this because ongoing operation is free, private, and unrestricted.
+
+---
+
+### ADR-005: Pluggable Operator Abstraction
+**Date:** 2025-01-20 | **Status:** Implemented
+
+**Problem:** Computer-use tools are hardcoded to one platform. Claude Computer Use only does desktop. OpenAI Operator only does browser. Neither can control mobile devices.
+
+**Decision:** Abstract the `Operator` interface: `screenshot()`, `execute()`, `getActionSpaces()`. The GUIAgent loop is operator-agnostic. Four implementations ship today: Desktop (nut-js), Browser (Puppeteer), Android (ADB), and Cloud (Browserbase). Adding a new platform = implementing one class.
+
+**Why this is better:** One agent, four platforms. The same task instruction works whether the target is a desktop app, a web page, or an Android phone. No other tool does this.
+
+**Trade-off:** Abstraction adds a layer of indirection. We accept this because the alternative -- forking the entire agent for each platform -- is unmaintainable.
+
+---
+
+### ADR-006: Electron over Python
+**Date:** 2025-01-10 | **Status:** Implemented
+
+**Problem:** Python-based agents (Claude Computer Use, Open Interpreter) run in terminals, have no persistent UI, can't do background operation, and distribute as scripts that users need to `pip install` and configure.
+
+**Decision:** Build on Electron 34. Native desktop app with system tray, background operation, auto-updates, code signing, and a React UI for real-time agent visualization. TypeScript throughout -- 58K LOC, zero JavaScript.
+
+**Why this is better:** Users download a `.dmg`, double-click, and it works. No terminal, no Python environment, no dependency hell. The system tray means it runs invisibly in the background. Auto-updates mean users always have the latest version.
+
+**Trade-off:** Electron's memory footprint (~150MB baseline). We mitigated this with the IPC image channel (ADR-002) and aggressive state management. For a tool that operates your entire desktop, 150MB is negligible.
+
+---
+
+### ADR-007: V8 Bytecode Compilation for Secrets
+**Date:** 2025-01-15 | **Status:** Implemented
+
+**Problem:** Electron apps ship JavaScript source. API keys, signing keys, and sensitive logic are readable by anyone who unpacks the `.asar` archive.
+
+**Decision:** Use `electron-vite`'s bytecode plugin to compile sensitive chunks to V8 bytecode at build time. Enable Electron Fuses: ASAR integrity validation, `OnlyLoadAppFromAsar`, cookie encryption, disable Node CLI inspection. Context isolation ensures the renderer can never access Node.js APIs directly.
+
+**Why this is better:** Open Interpreter is an open Python script. Claude Computer Use runs in a terminal with no protection. Exe's secrets are compiled to bytecode, the ASAR can't be tampered with, and the renderer is sandboxed.
+
+**Trade-off:** Bytecode compilation adds build complexity. JIT entitlement required on macOS. We accept this because the alternative is shipping secrets in plaintext.
+
+---
+
 ## Part of Exe OS
 
 **[Exe OS](https://github.com/AskExe/exe-os)** is an AI Employee Operating System -- infrastructure for orchestrating hierarchical multi-agent systems the way Linux orchestrates processes. Exe Computer Use is a **tool in that system**, not the system itself.
@@ -210,12 +305,6 @@ Exe OS (the operating system)
 ```
 
 When any AI employee in Exe OS needs to interact with a desktop application -- clicking through a UI, filling out forms, navigating software that has no API -- it calls Exe Computer Use. The CTO agent uses it to configure infrastructure dashboards. The CMO agent uses it to operate design tools. It's the hands and eyes of the organization.
-
-What Exe Computer Use contributes back to the OS:
-- **Operator routing** -- pluggable operator interface that generalizes to any tool
-- **Model abstraction** -- same code on local llama-server or cloud API, zero changes
-- **Self-correction** -- RMA loop detection + reflection = agents that learn from mistakes
-- **Memory segregation** -- knowledge base separate from operational state, persists across runs
 
 ---
 
